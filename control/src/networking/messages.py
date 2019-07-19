@@ -1,25 +1,14 @@
-import Message from message
+from message import Message
 
-NAME_LENGTH = 10
-
-MessageType = Message({
-    publisher: 0,
-    request: 1,
-    response: 2,
-    update: 3
+Test = Message({
+    'num': 'i',
+    'string': '10s',
+    'blob': 'blob'
 })
 
-Header = Message("Header", {
-    timeStamp: "time",
-    sender: str(NAME_LENGTH) + "s",
-    topic: str(NAME_LENGTH) + "s",
-    messageType: "c",
-    sequence: "I"
-})
-
-Test = Message("Test", {
-    header: Header,
-    num: "i",
-    string: "10s"
-    blob: "blob"
+Test2 = Message({
+    'ahh': 'i',
+    'bhh': 'i',
+    'test': Test,
+    'blob': 'blob'
 })
