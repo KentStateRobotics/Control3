@@ -4,7 +4,6 @@ message
 KentStateRobotics Jared Butcher 7/17/2019
 '''
 import struct
-import time
 from enum import Enum
 
 NAME_LENGTH = 10
@@ -30,10 +29,7 @@ class Message:
         self.blobKeys = []
         for key,value in messageDefinition.items():
             if type(value) is str:
-                if value == "time":
-                    self.structKeys.append(key)
-                    self.structFormat += "f"
-                elif value == "blob":
+                if value == "blob":
                     self.blobKeys.append(key)
                 else:
                     self.structKeys.append(key)
@@ -45,14 +41,11 @@ class Message:
 
     def pack(self, values, topLevel=True):
         structValues = []
-        for key in self.structKeys:
-            if self.definition[key] == "time":
-                structValues.append(time.time())
-            else:
-                structValues.append(values[key])
-        data = self.struct.pack(*structValues)
         if topLevel:
             data += Header.pack(values['header'], topLevel=False)
+        for key in self.structKeys:
+            structValues.append(values[key])
+        data = self.struct.pack(*structValues)
         for key in self.messageKeys:
             data += self.definition[key].pack(values[key], topLevel=False)
         for key in self.blobKeys:
@@ -62,12 +55,12 @@ class Message:
 
     def unpack(self, data, topLevel=True):
         outDict = self._createDict(topLevel=topLevel)
+        if topLevel:
+            outDict['header'], data = Header.unpack(data, topLevel=False)
         structValues = self.struct.unpack_from(data)
         for i in range(len(structValues)):
             outDict[self.structKeys[i]] = structValues[i]
         data = data[self.struct.size:]
-        if topLevel:
-            outDict['header'], data = Header.unpack(data, topLevel=False)
         for key in self.messageKeys:
             outDict[key], data = self.definition[key].unpack(data, topLevel=False)
         for key in self.blobKeys:
@@ -89,10 +82,14 @@ class Message:
         return outDict
 
     def getFormat(self):
-        return self.dictFormat
+        return self.dictFormat.copy()
+
+    def peekHeader(data):
+        header, data = Header.unpack(data, topLevel=False)
+        return header
 
 Header = Message({
-    'timeStamp': 'time',
+    'timeStamp': 'f',
     'sender': str(NAME_LENGTH) + 's',
     'topic': str(NAME_LENGTH) + 's',
     'messageType': 'c',

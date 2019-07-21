@@ -1,22 +1,36 @@
 #!/usr/bin/env python
 '''
 networking
-KentStateRobotics Jared Butcher 7/17/2019
+KentStateRobotics Jared Butcher 7/21/2019
 '''
 import websockets
 import threading
 import struct
 import socket
 import asyncio
+import message
+import publisher
+import subscriber
+import messages
+
+REGISTRATION_TOPIC = ''
 
 class NetworkCore:
     def __init__(self, name, port, host=None):
         self.running = True
-        self.name = name
+        if len(name) > message.NAME_LENGTH:
+            raise Exception("Name has exceded maximum length of {} characters".format(message.NAME_LENGTH))
+        self.name = message.padString(name, message.NAME_LENGTH)
         self.host = host
         self.port = port
         self.alive = True
-        self.clients = []
+        self.publishers = []
+        self.subscribers = []
+        if host is None:
+            self.clients = []
+            self.registrationSub = self.subscriber('', REGISTRATION_TOPIC, messages.SubscriberMsg, self._hostRegisterSub)
+        else:
+            self.registrationPub = self.publisher(REGISTRATION_TOPIC, messages.SubscriberMsg)
         self.thread = NetworkThread(self)
         self.thread.start()
 
@@ -38,14 +52,52 @@ class NetworkCore:
             self.thread.alive = False
             self.thread.loop.call_soon_threadsafe(self.thread.loop.stop)
             self.thread.join()
-            
+
+    def publisher(self, topic, message):
+        pub = publisher.Publisher(self, message.MessageType.publisher, self.name, topic, message)
+        self.publishers.append(pub)
+        return pub
+
+    def subscriber(self, source, topic, message, callback):
+        sub = subscriber.Subscriber(self, source, topic, message.MessageType.publisher, message, callback)
+        self.subscribers.append(sub)
+        if not host is None:
+            self.registrationPub.publish(subscriber.getRegisterMsg())
+        return sub
+
+    def removeSubscriber(self, subscriber):
+        self.subscribers.remove(subscriber)
+        self.registrationPub.publish(subscriber.getRegisterMsg(True))
+
+    def _hostRegisterSub(self, subMsg):
+        for client in self.clients:
+            if client.name == subMsg['header']['source']:
+                if subMsg['remove']:
+                    for sub in client.subs:
+                        if sub['topic'] == subMsg['topic'] and sub['source'] == subMsg['source'] and sub['messageType'] == subMsg['messageType']:
+                            client.subs.remove(sub)
+                else:
+                    client.subs.append(subMsg)
+
+    def routeMessageLocal(self, header, message):
+        for sub in self.subscribers:
+            if (sub.source == '' or sub.source == header['source']) and sub.topic == header['topic'] and sub.messageType == header['messageType']:
+                sub.received(message)
+
+    def routeMessageExternal(self, header, message):
+        for client in self.clients:
+            for sub in client.subs:
+                if (sub['source'] == '' or sub['source'] == header['source']) and sub['topic'] == header['topic'] and sub['messageType'] == header['messageType']:
+                    client.send(message)
+                    break
 
 class NetworkClient:
     def __init__(self, core, conn):
         self.core = core
         self.conn = conn
-        self.name = "client"
+        self.name = ''
         self.alive = True
+        self.subs = []
         self.loop = asyncio.get_event_loop()
 
     async def read(self):
@@ -56,12 +108,19 @@ class NetworkClient:
                 print(message)
             except websockets.exceptions.ConnectionClosed:
                 self.destory()
+                return
+            header = message.Message.peakHeader(message)
+            if self.name == ''
+                self.name = header['source']
+            self.core.routeMessageExternal(header, message)
+            self.core.routeMessageLocal(header, message)
 
     def send(self, message):
         asyncio.run_coroutine_threadsafe(self.conn.send(message), self.loop)
 
     def destory(self):
         self.alive = False
+        self.subs = None
         self.core.clients.remove(self)
 
 class NetworkThread(threading.Thread):
@@ -100,16 +159,12 @@ class NetworkThread(threading.Thread):
                     message = await self.conn.recv()
                     print("REC:")
                     print(message)
+                    self.core.routeMessageLocal(message.Message.peakHeader(message), message)
         except (ConnectionRefusedError, ConnectionResetError) as e:
             print(e)
-            
+            return
     
     def _stopAndReconnect(self):
         self.loop.stop()
         self.loop.run_until_complete(self._clientConnectAndRead())
         self.loop.run_forever()
-
-
-
-
-
