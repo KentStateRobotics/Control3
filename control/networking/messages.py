@@ -29,19 +29,6 @@ Message Types:
 '''
 from . import message
 
-Test = message.Message({
-    'num': 'i',
-    'string': '10s',
-    'blob': 'blob'
-})
-
-Test2 = message.Message({
-    'ahh': 'i',
-    'bhh': 'i',
-    'test': Test,
-    'blob': 'blob'
-})
-
 SubscriberMsg = message.Message({
     'source': str(message.NAME_LENGTH) + 's',
     'topic': str(message.NAME_LENGTH) + 's',

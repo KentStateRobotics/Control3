@@ -28,38 +28,31 @@ class NetworkCore:
             self.registrationSub = self.subscriber('', REGISTRATION_TOPIC, messages.SubscriberMsg, self._hostRegisterSub)
         else:
             self.registrationPub = self.publisher(REGISTRATION_TOPIC, messages.SubscriberMsg)
+            self.sendQueue = []
         self.thread = NetworkThread(self)
         self.thread.start()
 
-    def send(self, message, target):
-        if self.host is None:
-            for client in self.clients:
-                if client.name == target:
-                    client.send(message)
-        else:
-            print(self.thread.conn)
-            if not self.thread.conn is None:
-                asyncio.run_coroutine_threadsafe(self.thread.conn.send(message), self.thread.loop)
-
     def destory(self):
+        print("DESTORY CORE")
         self.alive = False
         for client in self.clients:
             client.destory()
         if not self.thread is None:
             self.thread.alive = False
-            self.thread.loop.call_soon_threadsafe(self.thread.loop.stop)
+            if not self.thread.loop is None:
+                self.thread.loop.call_soon_threadsafe(self.thread.loop.stop)
             self.thread.join()
 
-    def publisher(self, topic, message):
-        pub = publisher.Publisher(self, message.MessageType.publisher, self.name, topic, message)
+    def publisher(self, topic, messageDefinition):
+        pub = publisher.Publisher(self, self.name, topic, message.MessageType.publisher.value, messageDefinition)
         self.publishers.append(pub)
         return pub
 
-    def subscriber(self, source, topic, message, callback):
-        sub = subscriber.Subscriber(self, source, topic, message.MessageType.publisher, message, callback)
+    def subscriber(self, source, topic, messageDefinition, callback):
+        sub = subscriber.Subscriber(self, source, topic, message.MessageType.publisher.value, messageDefinition, callback)
         self.subscribers.append(sub)
-        if not host is None:
-            self.registrationPub.publish(subscriber.getRegisterMsg())
+        if not self.host is None:
+            self.registrationPub.publish(sub.getRegisterMsg())
         return sub
 
     def removeSubscriber(self, subscriber):
@@ -76,17 +69,31 @@ class NetworkCore:
                 else:
                     client.subs.append(subMsg)
 
+    def isConnectedToServer(self):
+        return not self.thread.conn is None
+
     def routeMessageLocal(self, header, message):
         for sub in self.subscribers:
             if (sub.source == '' or sub.source == header['source']) and sub.topic == header['topic'] and sub.messageType == header['messageType']:
                 sub.received(message)
 
     def routeMessageExternal(self, header, message):
-        for client in self.clients:
-            for sub in client.subs:
-                if (sub['source'] == '' or sub['source'] == header['source']) and sub['topic'] == header['topic'] and sub['messageType'] == header['messageType']:
-                    client.send(message)
-                    break
+        if self.host is None:
+            for client in self.clients:
+                for sub in client.subs:
+                    if (sub['source'] == '' or sub['source'] == header['source']) and sub['topic'] == header['topic'] and sub['messageType'] == header['messageType']:
+                        client.send(message)
+                        break
+        else:
+            if self.isConnectedToServer():
+                self.thread.clientSendToServer(message)
+            else:
+                self.sendQueue.append(message)
+
+    def onConnect(self):
+        for message in self.sendQueue:
+            self.thread.clientSendToServer(message)
+            self.sendQueue.remove(message)
 
 class NetworkClient:
     def __init__(self, core, conn):
@@ -124,6 +131,9 @@ class NetworkThread(threading.Thread):
     def __init__(self, core):
         self.alive = True
         self.core = core
+        self.loop = None
+        if not self.core.host is None:
+            self.conn = None
         threading.Thread.__init__(self)
 
     def run(self):
@@ -152,11 +162,20 @@ class NetworkThread(threading.Thread):
         try:
             async with websockets.connect(self.uri) as self.conn:
                 print("Connection established")
+                self.core.onConnect()
                 while self.alive:
                     message = await self.conn.recv()
                     print("REC:")
                     print(message)
                     self.core.routeMessageLocal(message.Message.peakHeader(message), message)
+        except (ConnectionRefusedError, ConnectionResetError) as e:
+            self.conn = None
+            print(e)
+            return
+
+    def clientSendToServer(self, message):
+        try:
+            asyncio.run_coroutine_threadsafe(self.conn.send(message), self.loop)
         except (ConnectionRefusedError, ConnectionResetError) as e:
             print(e)
             return

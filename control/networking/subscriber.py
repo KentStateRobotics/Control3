@@ -8,14 +8,14 @@ from . import message, messages
 import time
 
 class Subscriber:
-    def __init__(self, networkCore, messageType, source, topic, message, callback):
+    def __init__(self, networkCore, source, topic, messageType, messageDefinition, callback):
         if len(source) > message.NAME_LENGTH or len(topic) > message.NAME_LENGTH:
             raise Exception("Topic or source of subscriber excedied maximum length of {} characters".format(message.NAME_LENGTH))
         self.networkCore = networkCore
         self.messageType = messageType
-        self.source = padString(source, message.NAME_LENGTH)
-        self.topic = padString(topic, message.NAME_LENGTH)
-        self.message = message
+        self.source = message.padString(source, message.NAME_LENGTH)
+        self.topic = message.padString(topic, message.NAME_LENGTH)
+        self.messageDefinition = messageDefinition
         self.messagesSent = 0
 
     def getRegisterMsg(self, remove=False):
@@ -26,4 +26,4 @@ class Subscriber:
         return msg
 
     def received(self, data):
-        self.callback(self.message.unpack(data))
+        self.callback(self.messageDefinition.unpack(data))

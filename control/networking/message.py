@@ -16,9 +16,12 @@ class MessageType(Enum):
 
 Header = None
 
-
 def padString(value, length):
-    return value[:length].ljust(length, '\x00')
+    adjValue = value[:length].ljust(length, '\x00')
+    if type(adjValue) == str:
+        return adjValue.encode()
+    else:
+        return adjValue
 
 class Message:
     def __init__(self, messageDefinition):
@@ -41,11 +44,12 @@ class Message:
 
     def pack(self, values, topLevel=True):
         structValues = []
+        data = bytes()
         if topLevel:
             data += Header.pack(values['header'], topLevel=False)
         for key in self.structKeys:
             structValues.append(values[key])
-        data = self.struct.pack(*structValues)
+        data += self.struct.pack(*structValues)
         for key in self.messageKeys:
             data += self.definition[key].pack(values[key], topLevel=False)
         for key in self.blobKeys:
@@ -89,8 +93,8 @@ class Message:
         return header
 
 Header = Message({
-    'timeStamp': 'f',
-    'sender': str(NAME_LENGTH) + 's',
+    'timestamp': 'f',
+    'source': str(NAME_LENGTH) + 's',
     'topic': str(NAME_LENGTH) + 's',
     'messageType': 'c',
     'sequence': 'I'

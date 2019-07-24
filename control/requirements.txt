@@ -3,3 +3,4 @@ pyserial
 numpy
 opencv-contrib-python
 Panda3D
+timeout-decorator
