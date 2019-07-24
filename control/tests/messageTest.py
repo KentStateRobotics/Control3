@@ -1,5 +1,6 @@
-import message
-import messages
+import sys
+import networking.message as message
+import networking.messages as messages
 
 test = messages.Test2.getFormat()
 

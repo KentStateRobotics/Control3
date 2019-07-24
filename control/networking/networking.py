@@ -8,10 +8,7 @@ import threading
 import struct
 import socket
 import asyncio
-import message
-import publisher
-import subscriber
-import messages
+from . import message, publisher, subscriber, messages
 
 REGISTRATION_TOPIC = ''
 
@@ -110,7 +107,7 @@ class NetworkClient:
                 self.destory()
                 return
             header = message.Message.peakHeader(message)
-            if self.name == ''
+            if self.name == '':
                 self.name = header['source']
             self.core.routeMessageExternal(header, message)
             self.core.routeMessageLocal(header, message)

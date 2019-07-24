@@ -27,23 +27,23 @@ Message Types:
     Variable Length Types:
         blob    char[]              bytes           variable
 '''
-from message import Message, NAME_LENGTH
+from . import message
 
-Test = Message({
+Test = message.Message({
     'num': 'i',
     'string': '10s',
     'blob': 'blob'
 })
 
-Test2 = Message({
+Test2 = message.Message({
     'ahh': 'i',
     'bhh': 'i',
     'test': Test,
     'blob': 'blob'
 })
 
-SubscriberMsg = Message({
-    'source': str(NAME_LENGTH) + 's',
-    'topic': str(NAME_LENGTH) + 's',
+SubscriberMsg = message.Message({
+    'source': str(message.NAME_LENGTH) + 's',
+    'topic': str(message.NAME_LENGTH) + 's',
     'remove': '?'
 })

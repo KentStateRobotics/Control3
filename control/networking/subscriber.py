@@ -4,13 +4,11 @@ subscriber
 KentStateRobotics Jared Butcher 7/21/2019
 '''
 
-import networking
-import message
-import messages
+from . import message, messages
 import time
 
 class Subscriber:
-    __init__(self, networkCore, messageType, source, topic, message, callback):
+    def __init__(self, networkCore, messageType, source, topic, message, callback):
         if len(source) > message.NAME_LENGTH or len(topic) > message.NAME_LENGTH:
             raise Exception("Topic or source of subscriber excedied maximum length of {} characters".format(message.NAME_LENGTH))
         self.networkCore = networkCore
