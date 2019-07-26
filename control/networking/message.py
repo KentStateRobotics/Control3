@@ -17,11 +17,11 @@ class MessageType(Enum):
 Header = None
 
 def padString(value, length):
-    adjValue = value[:length].ljust(length, '\x00')
-    if type(adjValue) == str:
-        return adjValue.encode()
-    else:
-        return adjValue
+    if type(value) == str:
+        value = value.encode()
+    adjValue = value[:length]
+    adjValue += b'\x00' * (length - len(adjValue))
+    return adjValue
 
 class Message:
     def __init__(self, messageDefinition):

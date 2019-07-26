@@ -23,6 +23,7 @@ class Publisher:
         message['header']['timestamp'] = time.time()
         message['header']['sequence'] = self.sequence
         message['header']['messageType'] = self.messageType
+        self.sequence += 1
         self.networkCore.routeMessageExternal(message['header'], self.messageDefinition.pack(message))
 
     

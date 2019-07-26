@@ -35,12 +35,12 @@ class NetworkCore:
     def destory(self):
         print("DESTORY CORE")
         self.alive = False
-        for client in self.clients:
-            client.destory()
+        if hasattr(self, 'clients'):
+            for client in self.clients:
+                client.destory()
         if not self.thread is None:
-            self.thread.alive = False
             if not self.thread.loop is None:
-                self.thread.loop.call_soon_threadsafe(self.thread.loop.stop)
+                self.thread.loop.call_soon_threadsafe(self.thread.close)
             self.thread.join()
 
     def publisher(self, topic, messageDefinition):
@@ -61,6 +61,8 @@ class NetworkCore:
 
     def _hostRegisterSub(self, subMsg):
         for client in self.clients:
+            print(client.name)
+            print(subMsg['header']['source'])
             if client.name == subMsg['header']['source']:
                 if subMsg['remove']:
                     for sub in client.subs:
@@ -132,25 +134,26 @@ class NetworkThread(threading.Thread):
         self.alive = True
         self.core = core
         self.loop = None
-        if not self.core.host is None:
-            self.conn = None
+        self.conn = None
+        self.server = None
         threading.Thread.__init__(self)
 
     def run(self):
-        print("Networking thread started")
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         if self.core.host is None:
+            print("starting server")
             self.server = self.loop.run_until_complete(websockets.server.serve(self._recNewConn, host='', port=self.core.port, loop=self.loop))
+            self.loop.run_forever()
         else:
             self.uri = "ws://" + self.core.host + ":" + str(self.core.port)
             while self.alive:
                 try:
                     self.loop.run_until_complete(self._clientConnectAndRead())
-                except websockets.exceptions.ConnectionClosed:
-                    self.conn = None
-                    print("disconnected, atempting to reconnect")
-        self.loop.run_forever()
+                except (RuntimeError, websockets.exceptions.ConnectionClosed):
+                    if self.alive:
+                        self.conn = None
+                        print("disconnected, atempting to reconnect")
 
     async def _recNewConn(self, conn, url):
         print("Received new Connection Request")
@@ -160,6 +163,7 @@ class NetworkThread(threading.Thread):
     
     async def _clientConnectAndRead(self):
         try:
+            print("Trying to connect")
             async with websockets.connect(self.uri) as self.conn:
                 print("Connection established")
                 self.core.onConnect()
@@ -168,7 +172,7 @@ class NetworkThread(threading.Thread):
                     print("REC:")
                     print(message)
                     self.core.routeMessageLocal(message.Message.peakHeader(message), message)
-        except (ConnectionRefusedError, ConnectionResetError) as e:
+        except (ConnectionRefusedError, ConnectionResetError, Exception) as e:
             self.conn = None
             print(e)
             return
@@ -184,3 +188,12 @@ class NetworkThread(threading.Thread):
         self.loop.stop()
         self.loop.run_until_complete(self._clientConnectAndRead())
         self.loop.run_forever()
+
+    def close(self):
+        self.alive = False
+        if not self.conn is None:
+            self.conn.close()
+        elif not self.server is None:
+            self.server.close()
+        self.loop.stop()
+

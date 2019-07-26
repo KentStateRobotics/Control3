@@ -17,6 +17,7 @@ class Subscriber:
         self.topic = message.padString(topic, message.NAME_LENGTH)
         self.messageDefinition = messageDefinition
         self.messagesSent = 0
+        self.callback = callback
 
     def getRegisterMsg(self, remove=False):
         msg = messages.SubscriberMsg.dictFormat
@@ -26,4 +27,4 @@ class Subscriber:
         return msg
 
     def received(self, data):
-        self.callback(self.messageDefinition.unpack(data))
+        self.callback(self.messageDefinition.unpack(data)[0])

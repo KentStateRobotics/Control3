@@ -3,8 +3,6 @@ from networking import message
 import unittest
 from unittest import mock
 
-
-
 class TestPadString(unittest.TestCase):
     
     def test_Empty(self):
@@ -18,6 +16,9 @@ class TestPadString(unittest.TestCase):
     
     def test_Long(self):
         self.assertEqual(message.padString('hello', 3), b'hel')
+
+    def test_Bytes(self):
+        self.assertEqual(message.padString(b'i', 3), b'i\x00\x00')
 
 class TestMessage(unittest.TestCase):
     def setUp(self):
@@ -69,6 +70,23 @@ class TestMessage(unittest.TestCase):
         msg['int'] = 5
         msg['double'] = 32322342425.5
         msg['chars'] = message.padString("hi", 5)
+        msg['header']['source'] = message.padString("source", message.NAME_LENGTH)
+        msg['header']['topic'] = message.padString("topic", message.NAME_LENGTH)
+        msg['header']['timestamp'] = 703452.5
+        msg['header']['sequence'] = 53
+        msg['header']['messageType'] = message.MessageType.update.value
+        data = structMsg.pack(msg)
+        unpackedData = structMsg.unpack(data)[0]
+        self.assertEqual(msg, unpackedData)
+
+    def test_blob(self):
+        structMsg = message.Message({
+            'int': 'i',
+            'blob': 'blob'
+        })
+        msg = structMsg.getFormat()
+        msg['int'] = 543
+        msg['blob'] = b'A rather not too short message or something'
         msg['header']['source'] = message.padString("source", message.NAME_LENGTH)
         msg['header']['topic'] = message.padString("topic", message.NAME_LENGTH)
         msg['header']['timestamp'] = 703452.5
