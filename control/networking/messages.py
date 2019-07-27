@@ -30,7 +30,8 @@ Message Types:
 from . import message
 
 SubscriberMsg = message.Message({
-    'source': str(message.NAME_LENGTH) + 's',
-    'topic': str(message.NAME_LENGTH) + 's',
+    'source': str(message.Message.NAME_LENGTH) + 's',
+    'topic': str(message.Message.NAME_LENGTH) + 's',
+    'messageType': 'c',
     'remove': '?'
 })
