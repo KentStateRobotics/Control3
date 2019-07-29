@@ -5,10 +5,13 @@ KentStateRobotics Jared Butcher 7/21/2019
 '''
 from .message import Message
 
+
+
 class NetworkCore:
-    def __init__(self, name, port):
+    def __init__(self, name, port, discoveryPort):
         self.name = Message.padString(name, Message.NAME_LENGTH)
         self.port = port
+        self.discoveryPort = discoveryPort
         self.onConnect = None
         self.onDisconnect = None
         self.subscribers = []

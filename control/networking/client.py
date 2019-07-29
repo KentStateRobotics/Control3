@@ -5,17 +5,19 @@ from .networkCore import NetworkCore
 from .subscriber import Subscriber
 from .publisher import Publisher
 from .message import Message
+from .discovery import Discovery
 from . import messages
 import time
 
 class Client(NetworkCore):
     '''Starts a network client. Interface with it as a NetworkCore object
     '''
-    def __init__(self, name, port, host=None):
-        super().__init__(name, port)
+    def __init__(self, name, port, host=None, discoveryPort=None, discoveryId=None):
+        super().__init__(name, port, discoveryPort)
         self.alive = True
         self.host = host
         self.messageQueue = []
+        self.discoveryId = Message.padString(discoveryId, Message.NAME_LENGTH)
         self.subcriberRegistrationPub = Publisher(self, self.name, Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg)
         self.clientThread = Client.Thread(self)
         self.clientThread.start()
@@ -73,6 +75,12 @@ class Client(NetworkCore):
                         time.sleep(1)
 
         async def _connectAndRead(self):
+            if self.client.host is None and not self.client.discoveryPort is None:
+                self.client.host = Discovery(self.client.discoveryPort).find(self.client.discoveryId, 5)
+                if self.client.host == None:
+                    print("Failed to find server")
+                    self.client.close()
+                    return
             try:
                 async with websockets.connect("ws://" + self.client.host + ":" + str(self.client.port)) as self.connection:
                     print("Connection established")

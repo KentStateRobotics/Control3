@@ -10,8 +10,8 @@ def printMsg(msg):
     print("Client received: " + msg['str'].decode('utf-8'))
 
 try:
-    server = networking.Server("server", 4242)
-    client = networking.Client("client", 4242, "127.0.0.1")
+    server = networking.Server("server", 4242, 4243)
+    client = networking.Client("client", 4242, discoveryPort=4243, discoveryId="server")
     clientPub = networking.Publisher(client, None, 'send', Message.MessageType.publisher.value, strMsg)
     clientSub = client.addSubscriber(server.name, 'rec', Message.MessageType.publisher.value, strMsg, printMsg)
     serverPub = networking.Publisher(server, None, 'rec', Message.MessageType.publisher.value, strMsg)

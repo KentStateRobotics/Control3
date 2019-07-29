@@ -4,13 +4,14 @@ import asyncio
 from .networkCore import NetworkCore
 from .subscriber import Subscriber
 from .message import Message
+from .discovery import Discovery
 from . import messages
 
 class Server(NetworkCore):
     '''Starts the network server. Interface with it as a NetworkCore object
     '''
-    def __init__(self, name, port):
-        super().__init__(name, port)
+    def __init__(self, name, port, discoveryPort=None):
+        super().__init__(name, port, discoveryPort)
         self.clients = []
         self.alive = True
         self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg, self._recSubRegister)
@@ -66,6 +67,7 @@ class Server(NetworkCore):
         def __init__(self, server):
             self.loop = None
             self.server = server
+            self.discovery = Discovery(self.server.discoveryPort)
             threading.Thread.__init__(self)
             
         def run(self):
@@ -74,6 +76,9 @@ class Server(NetworkCore):
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             print("Starting Server")
+            if not self.server.discoveryPort is None:
+                self.discoveryCoro = self.loop.run_until_complete(self.discovery.echoAddress(self.server.name, self.loop))
+            print("AAAAAAAAA")
             self.wsServer = self.loop.run_until_complete(websockets.server.serve(self._recNewConn, host='', port=self.server.port, loop=self.loop))
             self.loop.run_forever()
 
