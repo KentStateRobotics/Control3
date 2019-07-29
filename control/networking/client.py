@@ -6,6 +6,7 @@ from .subscriber import Subscriber
 from .publisher import Publisher
 from .message import Message
 from . import messages
+import time
 
 class Client(NetworkCore):
     '''Starts a network client. Interface with it as a NetworkCore object
@@ -15,7 +16,7 @@ class Client(NetworkCore):
         self.alive = True
         self.host = host
         self.messageQueue = []
-        self.subcriberRegistrationPub = Publisher(self, '', Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg)
+        self.subcriberRegistrationPub = Publisher(self, self.name, Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg)
         self.clientThread = Client.Thread(self)
         self.clientThread.start()
 
@@ -37,7 +38,8 @@ class Client(NetworkCore):
     def addSubscriber(self, source, topic, messageType, message, callback):
         '''Please use this to create subscribers
         '''
-        sub = Subscriber(source, topic, messageType, messageDefinition, callback)
+        sub = Subscriber(source, topic, messageType, message, callback)
+        self.subscribers.append(sub)
         msg = sub.getRegisterMsg()
         self.subcriberRegistrationPub.publish(msg)
         return sub
@@ -63,11 +65,12 @@ class Client(NetworkCore):
             while self.client.alive:
                 try:
                     self.loop.run_until_complete(self._connectAndRead())
-                except (RuntimeError, websockets.exceptions.ConnectionClosed):
+                except (RuntimeError, websockets.exceptions.ConnectionClosed) as e:
                     if self.client.alive:
                         if not self.client.onDisconnect is None:
                             self.client.onDisconnect()
                         print("disconnected, atempting to reconnect")
+                        time.sleep(1)
 
         async def _connectAndRead(self):
             try:
@@ -75,13 +78,14 @@ class Client(NetworkCore):
                     print("Connection established")
                     for message in self.client.messageQueue:
                         asyncio.run_coroutine_threadsafe(self.connection.send(message), self.loop)
+                        self.client.messageQueue.remove(message)
                     if not self.client.onConnect is None:
                         self.client.onConnect()
                     while self.client.alive:
                         message = await self.connection.recv()
                         print("REC:")
                         print(message)
-                        self.client.routeInternal(message.Message.peakHeader(message), message)
+                        self.client.routeInternal(Message.peekHeader(message), message)
             except (ConnectionRefusedError, ConnectionResetError) as e:
                 print(e)
                 self.client.close()

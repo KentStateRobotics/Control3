@@ -13,7 +13,7 @@ class Server(NetworkCore):
         super().__init__(name, port)
         self.clients = []
         self.alive = True
-        self.subcriberRegistrationSub = Subscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg, self._recSubRegister)
+        self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg, self._recSubRegister)
         self.serverThread = Server.Thread(self)
         self.serverThread.start()
 
@@ -30,13 +30,16 @@ class Server(NetworkCore):
         '''Shutdown server, gracefuly?
         '''
         #self.serverThread.loop.call_soon_threadsafe(self.serverThread.close)
-        asyncio.run_coroutine_threadsafe(self.serverThread.close(), self.serverThread.loop)
+        self.alive = False
+        print("Server is Closing")
+        if not self.serverThread.loop is None:
+            asyncio.run_coroutine_threadsafe(self.serverThread.close(), self.serverThread.loop)
         self.serverThread.join()
 
     def addSubscriber(self, source, topic, messageType, message, callback):
         '''Please use this to create subscribers
         '''
-        sub = Subscriber(source, topic, messageType, messageDefinition, callback)
+        sub = Subscriber(source, topic, messageType, message, callback)
         self.subscribers.append(sub)
         return sub
 
@@ -101,14 +104,14 @@ class Server(NetworkCore):
                 except websockets.exceptions.ConnectionClosed:
                     self.close()
                     return
-                header = message.Message.peakHeader(message)
+                header = Message.peekHeader(message)
                 if self.name == '':
                     self.name = header['source']
                 self.server.routeInternal(header, message)
                 self.server.send(header, message)
 
         def send(self, message):
-            asyncio.run_coroutine_threadsafe(self.connection.send(message), self.loop)
+            asyncio.run_coroutine_threadsafe(self.connection.send(message), self.server.serverThread.loop)
 
         def close(self):
             self.connection.close()

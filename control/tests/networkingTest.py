@@ -4,6 +4,7 @@ from unittest import mock
 import networking
 from networking.message import Message
 import networking.messages as messages
+from networking.subscriber import Subscriber
 
 source = Message.padString("source", Message.NAME_LENGTH)
 topic = Message.padString("topic", Message.NAME_LENGTH)
@@ -15,16 +16,16 @@ class TestSubscriber(unittest.TestCase):
     
     def test_topicException(self):
         def defineBadSubscriber():
-            networking.Subscriber(source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.publisher.value, testMsg, None)
+            Subscriber(source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.publisher.value, testMsg, None)
         self.assertRaises(ValueError, defineBadSubscriber)
 
     def test_messageTypeException(self):
         def defineBadSubscriber():
-            networking.Subscriber(source, topic, Message.MessageType.publisher, testMsg, None)
+            Subscriber(source, topic, Message.MessageType.publisher, testMsg, None)
         self.assertRaises(TypeError, defineBadSubscriber)
 
     def test_register(self):
-        sub = networking.Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
         correctRegisterMessage = messages.SubscriberMsg.getFormat()
         correctRegisterMessage['source'] = source
         correctRegisterMessage['topic'] = topic
@@ -33,7 +34,7 @@ class TestSubscriber(unittest.TestCase):
         self.assertEqual(sub.getRegisterMsg(), correctRegisterMessage)
     
     def test_topicMatchAll(self):
-        sub = networking.Subscriber('', topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber('', topic, Message.MessageType.publisher.value, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
@@ -43,7 +44,7 @@ class TestSubscriber(unittest.TestCase):
         self.assertTrue(sub.topicMatch(header))
 
     def test_topicMatchFalse(self):
-        sub = networking.Subscriber('notClient', topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber('notClient', topic, Message.MessageType.publisher.value, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
@@ -64,11 +65,11 @@ class TestSubscriber(unittest.TestCase):
         header['sequence'] = 0
         header['messageType'] = Message.MessageType.publisher.value
         header['timestamp'] = 24
-        self.assertTrue(networking.Subscriber.registrationMatch(reg, header))
+        self.assertTrue(Subscriber.registrationMatch(reg, header))
 
     def test_received(self):
         f = mock.Mock()
-        sub = networking.Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, f)
+        sub = Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, f)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         msg['header']['source'] = source

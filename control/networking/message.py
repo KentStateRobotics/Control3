@@ -54,7 +54,10 @@ class Message:
             data += self.definition[key].pack(values[key], topLevel=False)
         for key in self.blobKeys:
             data += len(values[key]).to_bytes(4, "big")
-            data += values[key]
+            if type(values[key]) == str:
+                data += values[key].encode()
+            else:
+                data += values[key]
         return data
 
     def unpack(self, data, topLevel=True):

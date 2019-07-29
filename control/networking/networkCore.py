@@ -52,6 +52,6 @@ class NetworkCore:
         message - bytes of message
         '''
         for sub in self.subscribers:
-            sub.received(message)
+            sub.received(header, message)
 
     

@@ -12,7 +12,7 @@ class Publisher:
 
     networkCore - The network core to used to send
 
-    source - Name of the sending network core
+    source - Name of the sending network core, NONE to use local name
 
     topic - Lable the publisher will be publishing under
 
@@ -27,7 +27,10 @@ class Publisher:
             raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.publisher.value")
         self.networkCore = networkCore
         self.messageType = messageType
-        self.source = Message.padString(source, Message.NAME_LENGTH)
+        if source is None:
+            self.source = networkCore.name
+        else:
+            self.source = Message.padString(source, Message.NAME_LENGTH)
         self.topic = Message.padString(topic, Message.NAME_LENGTH)
         self.messageDefinition = messageDefinition
         self.sequence = 0
