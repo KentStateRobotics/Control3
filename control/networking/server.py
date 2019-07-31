@@ -78,7 +78,6 @@ class Server(NetworkCore):
             print("Starting Server")
             if not self.server.discoveryPort is None:
                 self.discoveryCoro = self.loop.run_until_complete(self.discovery.echoAddress(self.server.name, self.loop))
-            print("AAAAAAAAA")
             self.wsServer = self.loop.run_until_complete(websockets.server.serve(self._recNewConn, host='', port=self.server.port, loop=self.loop))
             self.loop.run_forever()
 

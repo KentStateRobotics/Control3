@@ -57,4 +57,6 @@ class NetworkCore:
         for sub in self.subscribers:
             sub.received(header, message)
 
-    
+class TimeoutException(Exception):
+    def __init__(self, message):
+        self.message = message

@@ -16,7 +16,7 @@ class Discovery:
         self.port = port
         self.transport = None
 
-    def find(self, id, timeout):
+    def find(self, id, tries):
         '''Trys to find user with matching id for the timeout duration
         '''
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -39,8 +39,8 @@ class Discovery:
                     return address[0]
             except socket.timeout:
                 retries += 1
-                if retries > timeout:
-                    print("Failed to receive address from {} in {} atempts".format(id, retries - 1))
+                if retries >= tries:
+                    print("Failed to receive address from {} in {} atempts".format(id, retries))
                     return None
                 else:
                     print("Failed to receive address from {}, retrying".format(id))

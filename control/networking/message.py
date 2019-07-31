@@ -49,7 +49,12 @@ class Message:
             data += Message.Header.pack(values['header'], topLevel=False)
         for key in self.structKeys:
             structValues.append(values[key])
-        data += self.struct.pack(*structValues)
+        try:
+            data += self.struct.pack(*structValues)
+        except struct.error as e:
+            print("Error occured while packing: " + str(structValues))
+            print("Into: " + str(self.definition))
+            raise e
         for key in self.messageKeys:
             data += self.definition[key].pack(values[key], topLevel=False)
         for key in self.blobKeys:

@@ -5,11 +5,17 @@ import networking
 from networking.message import Message
 import networking.messages as messages
 from networking.subscriber import Subscriber
+from networking.discovery import Discovery
+import networking.service as service
+import socket
 
 source = Message.padString("source", Message.NAME_LENGTH)
 topic = Message.padString("topic", Message.NAME_LENGTH)
 testMsg = Message({
     'int': 'i'
+})
+testMsgBlob = Message({
+    'blob': 'blob'
 })
 
 class TestSubscriber(unittest.TestCase):
@@ -133,6 +139,18 @@ class TestServer(unittest.TestCase):
         client.send.assert_called_once_with(packedMsg)
 
     @mock.patch('networking.Server.Thread')
+    def test_addSubscriber(self, serverThread):
+        server = networking.Server("server", 4242)
+        sub = server.addSubscriber("source", "topic", Message.MessageType.publisher.value, testMsg, None)
+        self.assertTrue(sub in server.subscribers)
+        msg = messages.SubscriberMsg.getFormat()
+        msg['source'] = Message.padString("source", Message.NAME_LENGTH)
+        msg['topic'] = Message.padString("topic", Message.NAME_LENGTH)
+        msg['messageType'] = Message.MessageType.publisher.value
+        msg['remove'] = False
+        self.assertEqual(sub.getRegisterMsg(), msg)
+
+    @mock.patch('networking.Server.Thread')
     def test_registerSubscriber(self, serverThread):
         client = mock.MagicMock()
         client.name = source
@@ -173,6 +191,154 @@ class TestServer(unittest.TestCase):
         msg['remove'] = True
         server._recSubRegister(msg)
         self.assertEqual(0, len(client.subscribers))
+
+class TestClient(unittest.TestCase):
+
+    @mock.patch('time.time', return_value=1)
+    @mock.patch('networking.Client.Thread')
+    @mock.patch('networking.Client.send')
+    def test_addSubscriber(self, send, clientThread, time):
+        client = networking.Client("client", 4242, host="127.0.0.1")
+        sub = client.addSubscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        self.assertTrue(sub in client.subscribers)
+        msg = messages.SubscriberMsg.getFormat()
+        msg['source'] = source
+        msg['topic'] = topic
+        msg['messageType'] = Message.MessageType.publisher.value
+        msg['remove'] = False
+        msg['header']['source'] = client.name
+        msg['header']['topic'] = Message.padString(Subscriber.REGISTRATION_TOPIC, Message.NAME_LENGTH)
+        msg['header']['sequence'] = 0
+        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['timestamp'] = 1
+        send.assert_called_once_with(msg['header'], messages.SubscriberMsg.pack(msg))
+
+    @mock.patch('time.time', return_value=1)
+    @mock.patch('networking.Client.Thread')
+    @mock.patch('networking.Client.send')
+    def test_rmoveSubscriber(self, send, clientThread, time):
+        client = networking.Client("client", 4242, host="127.0.0.1")
+        sub = client.addSubscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        client.removeSubscriber(sub)
+        self.assertFalse(sub in client.subscribers)
+        msg = messages.SubscriberMsg.getFormat()
+        msg['source'] = source
+        msg['topic'] = topic
+        msg['messageType'] = Message.MessageType.publisher.value
+        msg['remove'] = True
+        msg['header']['source'] = client.name
+        msg['header']['topic'] = Message.padString(Subscriber.REGISTRATION_TOPIC, Message.NAME_LENGTH)
+        msg['header']['sequence'] = 1
+        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['timestamp'] = 1
+        send.assert_called_with(msg['header'], messages.SubscriberMsg.pack(msg))
+
+class TestDiscovery(unittest.TestCase):
+
+    def setUp(self):
+        self.sockMock = mock.MagicMock()
+        self.port = 4242
+        self.id = b'id'
+        self.address = "192.168.0.69"
+        self.discovery = Discovery(self.port)
+        self.discoveryProtocolFactory = Discovery.DiscoveryProtocolFactory(self.id)
+        self.serverSockMock = mock.MagicMock()
+        self.discoveryProtocolFactory.connection_made(self.serverSockMock)
+
+    def test_findSend(self):
+        self.sockMock.recvfrom.return_value = (Discovery.RESPONSE, (self.address, self.port))
+        @mock.patch('socket.socket', return_value=self.sockMock)
+        def inTestFind(socket):
+            address = self.discovery.find(self.id, 1)
+            self.sockMock.sendto.assert_called_once_with(self.id, ('<broadcast>', self.port))
+        inTestFind()
+
+    def test_findReturn(self):
+        self.sockMock.recvfrom.return_value = (Discovery.RESPONSE, (self.address, self.port))
+        @mock.patch('socket.socket', return_value=self.sockMock)
+        def inTestFind(socket):
+            address = self.discovery.find(self.id, 1)
+            self.assertEqual(address, self.address)
+        inTestFind()
+
+    def test_findIterations(self):
+        self.sockMock.recvfrom.side_effect = socket.timeout()
+        @mock.patch('socket.socket', return_value=self.sockMock)
+        def inTestFind(socket):
+            address = self.discovery.find(self.id, 5)
+            self.assertEqual(5, self.sockMock.recvfrom.call_count)
+        inTestFind()
+
+    def test_receive(self):
+        self.discoveryProtocolFactory.datagram_received(self.id, (self.address, self.port))
+        self.serverSockMock.sendto.assert_called_once_with(Discovery.RESPONSE, ('<broadcast>', self.port))
+
+    def test_receiveNegitive(self):
+        self.discoveryProtocolFactory.datagram_received("AHHHH", (self.address, self.port))
+        self.serverSockMock.sendto.assert_not_called()
+
+class TestService(unittest.TestCase):
+
+    @mock.patch('time.time', return_value=1)
+    def test_response(self, time):
+        networkCore = mock.MagicMock()
+        networkCore.addSubscriber.side_effect = Subscriber
+        def testMsgIncrement(msg):
+            msg['blob'] = "A" + str(msg['int'] + 1)
+            return msg
+
+        incrementService = service.Service(networkCore, source, topic, testMsg, testMsgBlob, testMsgIncrement)
+        msg = testMsg.getFormat()
+        msg['int'] = 456486
+        msg['header']['source'] = source
+        msg['header']['topic'] = topic
+        msg['header']['sequence'] = 0
+        msg['header']['messageType'] = Message.MessageType.request.value
+        msg['header']['timestamp'] = 1
+        incrementService.sub.received(msg['header'], testMsg.pack(msg))
+        msg['header']['messageType'] = Message.MessageType.response.value
+        msg.pop('int')
+        msg['blob'] = "A456487"
+        networkCore.send.assert_called_once_with(msg['header'], testMsgBlob.pack(msg))
+
+    @mock.patch('time.time', return_value=1)
+    def test_requestSend(self, timeSpoof):
+        networkCore = mock.MagicMock()
+        networkCore.addSubscriber.side_effect = Subscriber
+        callback = mock.MagicMock()
+        testProxyService = service.ProxyService(networkCore, source, topic, testMsg, testMsg, callback)
+        msg = testMsg.getFormat()
+        msg['int'] = 456486
+        msg['header']['source'] = source
+        msg['header']['topic'] = topic
+        msg['header']['sequence'] = 0
+        msg['header']['messageType'] = Message.MessageType.request.value
+        msg['header']['timestamp'] = 1
+        testProxyService.call(msg)
+        networkCore.send.assert_called_once_with(msg['header'], testMsg.pack(msg))
+
+    @mock.patch('time.time', return_value=1)
+    def test_requestCallback(self, timeSpoof):
+        networkCore = mock.MagicMock()
+        networkCore.addSubscriber.side_effect = Subscriber
+        callback = mock.MagicMock()
+        testProxyService = service.ProxyService(networkCore, source, topic, testMsg, testMsg, callback)
+        def changeMsgTypeAndSend(header, msg):
+            msg = testMsg.unpack(msg)[0]
+            msg['header']['messageType'] = Message.MessageType.response.value
+            testProxyService.sub.received(msg['header'], testMsg.pack(msg))
+
+        networkCore.send.side_effect = changeMsgTypeAndSend
+        msg = testMsg.getFormat()
+        msg['int'] = 7
+        msg['header']['source'] = source
+        msg['header']['topic'] = topic
+        msg['header']['sequence'] = 0
+        msg['header']['timestamp'] = 1
+        testProxyService.call(msg)
+        msg['header']['messageType'] = Message.MessageType.response.value
+        callback.assert_called_once_with(msg)
+
 
 if __name__ == '__main__':
     unittest.main()
