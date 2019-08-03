@@ -22,40 +22,40 @@ class TestSubscriber(unittest.TestCase):
     
     def test_topicException(self):
         def defineBadSubscriber():
-            Subscriber(source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.publisher.value, testMsg, None)
+            Subscriber(source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.PUBLISHER.value, testMsg, None)
         self.assertRaises(ValueError, defineBadSubscriber)
 
     def test_messageTypeException(self):
         def defineBadSubscriber():
-            Subscriber(source, topic, Message.MessageType.publisher, testMsg, None)
+            Subscriber(source, topic, Message.MessageType.PUBLISHER, testMsg, None)
         self.assertRaises(TypeError, defineBadSubscriber)
 
     def test_register(self):
-        sub = Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
         correctRegisterMessage = messages.SubscriberMsg.getFormat()
         correctRegisterMessage['source'] = source
         correctRegisterMessage['topic'] = topic
-        correctRegisterMessage['messageType'] = Message.MessageType.publisher.value
+        correctRegisterMessage['messageType'] = Message.MessageType.PUBLISHER.value
         correctRegisterMessage['remove'] = False
         self.assertEqual(sub.getRegisterMsg(), correctRegisterMessage)
     
     def test_topicMatchAll(self):
-        sub = Subscriber('', topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber('', topic, Message.MessageType.PUBLISHER.value, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
         header['sequence'] = 0
-        header['messageType'] = Message.MessageType.publisher.value
+        header['messageType'] = Message.MessageType.PUBLISHER.value
         header['timestamp'] = 24
         self.assertTrue(sub.topicMatch(header))
 
     def test_topicMatchFalse(self):
-        sub = Subscriber('notClient', topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = Subscriber('notClient', topic, Message.MessageType.PUBLISHER.value, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
         header['sequence'] = 0
-        header['messageType'] = Message.MessageType.publisher.value
+        header['messageType'] = Message.MessageType.PUBLISHER.value
         header['timestamp'] = 24
         self.assertFalse(sub.topicMatch(header))
     
@@ -63,25 +63,25 @@ class TestSubscriber(unittest.TestCase):
         reg = {
             'source': source,
             'topic': topic,
-            'messageType': Message.MessageType.publisher.value,
+            'messageType': Message.MessageType.PUBLISHER.value,
         }
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
         header['sequence'] = 0
-        header['messageType'] = Message.MessageType.publisher.value
+        header['messageType'] = Message.MessageType.PUBLISHER.value
         header['timestamp'] = 24
         self.assertTrue(Subscriber.registrationMatch(reg, header))
 
     def test_received(self):
         f = mock.Mock()
-        sub = Subscriber(source, topic, Message.MessageType.publisher.value, testMsg, f)
+        sub = Subscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, f)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 24
         sub.received(msg['header'], testMsg.pack(msg))
         f.assert_called_once_with(msg)
@@ -91,25 +91,25 @@ class TestPublisher(unittest.TestCase):
     
     def test_topicException(self):
         def defineBadPublisher():
-            networking.Publisher(None, source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.publisher.value, testMsg)
+            networking.Publisher(None, source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.PUBLISHER.value, testMsg)
         self.assertRaises(ValueError, defineBadPublisher)
 
     def test_messageTypeException(self):
         def defineBadPublisher():
-            networking.Publisher(None, source, topic, Message.MessageType.publisher, testMsg)
+            networking.Publisher(None, source, topic, Message.MessageType.PUBLISHER, testMsg)
         self.assertRaises(TypeError, defineBadPublisher)
 
     @mock.patch('time.time', return_value=10)
     def test_publish(self, timePatch):
         core = mock.MagicMock()
-        sub = networking.Publisher(core, source, topic, Message.MessageType.publisher.value, testMsg)
+        sub = networking.Publisher(core, source, topic, Message.MessageType.PUBLISHER.value, testMsg)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         sub.publish(msg)
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 10
         core.send.assert_called_once_with(msg['header'], testMsg.pack(msg))
 
@@ -123,7 +123,7 @@ class TestServer(unittest.TestCase):
         reg = {
             'source': source,
             'topic': topic,
-            'messageType': Message.MessageType.publisher.value,
+            'messageType': Message.MessageType.PUBLISHER.value,
             'remove': False
         }
         client.subscribers = [reg, reg]
@@ -132,7 +132,7 @@ class TestServer(unittest.TestCase):
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 10
         packedMsg = testMsg.pack(msg)
         server.send(msg['header'], packedMsg)
@@ -141,12 +141,12 @@ class TestServer(unittest.TestCase):
     @mock.patch('networking.Server.Thread')
     def test_addSubscriber(self, serverThread):
         server = networking.Server("server", 4242)
-        sub = server.addSubscriber("source", "topic", Message.MessageType.publisher.value, testMsg, None)
+        sub = server.addSubscriber("source", "topic", Message.MessageType.PUBLISHER.value, testMsg, None)
         self.assertTrue(sub in server.subscribers)
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = Message.padString("source", Message.NAME_LENGTH)
         msg['topic'] = Message.padString("topic", Message.NAME_LENGTH)
-        msg['messageType'] = Message.MessageType.publisher.value
+        msg['messageType'] = Message.MessageType.PUBLISHER.value
         msg['remove'] = False
         self.assertEqual(sub.getRegisterMsg(), msg)
 
@@ -160,12 +160,12 @@ class TestServer(unittest.TestCase):
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = Message.padString("a", Message.NAME_LENGTH)
         msg['topic'] = Message.padString("t", Message.NAME_LENGTH)
-        msg['messageType'] = Message.MessageType.publisher.value
+        msg['messageType'] = Message.MessageType.PUBLISHER.value
         msg['remove'] = False
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 10
         server._recSubRegister(msg)
         self.assertEqual(msg, client.subscribers[0])
@@ -180,12 +180,12 @@ class TestServer(unittest.TestCase):
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = Message.padString("a", Message.NAME_LENGTH)
         msg['topic'] = Message.padString("t", Message.NAME_LENGTH)
-        msg['messageType'] = Message.MessageType.publisher.value
+        msg['messageType'] = Message.MessageType.PUBLISHER.value
         msg['remove'] = False
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 10
         server._recSubRegister(msg)
         msg['remove'] = True
@@ -199,17 +199,17 @@ class TestClient(unittest.TestCase):
     @mock.patch('networking.Client.send')
     def test_addSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
-        sub = client.addSubscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = client.addSubscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
         self.assertTrue(sub in client.subscribers)
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = source
         msg['topic'] = topic
-        msg['messageType'] = Message.MessageType.publisher.value
+        msg['messageType'] = Message.MessageType.PUBLISHER.value
         msg['remove'] = False
         msg['header']['source'] = client.name
         msg['header']['topic'] = Message.padString(Subscriber.REGISTRATION_TOPIC, Message.NAME_LENGTH)
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 1
         send.assert_called_once_with(msg['header'], messages.SubscriberMsg.pack(msg))
 
@@ -218,18 +218,18 @@ class TestClient(unittest.TestCase):
     @mock.patch('networking.Client.send')
     def test_rmoveSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
-        sub = client.addSubscriber(source, topic, Message.MessageType.publisher.value, testMsg, None)
+        sub = client.addSubscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
         client.removeSubscriber(sub)
         self.assertFalse(sub in client.subscribers)
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = source
         msg['topic'] = topic
-        msg['messageType'] = Message.MessageType.publisher.value
+        msg['messageType'] = Message.MessageType.PUBLISHER.value
         msg['remove'] = True
         msg['header']['source'] = client.name
         msg['header']['topic'] = Message.padString(Subscriber.REGISTRATION_TOPIC, Message.NAME_LENGTH)
         msg['header']['sequence'] = 1
-        msg['header']['messageType'] = Message.MessageType.publisher.value
+        msg['header']['messageType'] = Message.MessageType.PUBLISHER.value
         msg['header']['timestamp'] = 1
         send.assert_called_with(msg['header'], messages.SubscriberMsg.pack(msg))
 
@@ -293,10 +293,10 @@ class TestService(unittest.TestCase):
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.request.value
+        msg['header']['messageType'] = Message.MessageType.REQUEST.value
         msg['header']['timestamp'] = 1
         incrementService.sub.received(msg['header'], testMsg.pack(msg))
-        msg['header']['messageType'] = Message.MessageType.response.value
+        msg['header']['messageType'] = Message.MessageType.RESPONSE.value
         msg.pop('int')
         msg['blob'] = "A456487"
         networkCore.send.assert_called_once_with(msg['header'], testMsgBlob.pack(msg))
@@ -312,7 +312,7 @@ class TestService(unittest.TestCase):
         msg['header']['source'] = source
         msg['header']['topic'] = topic
         msg['header']['sequence'] = 0
-        msg['header']['messageType'] = Message.MessageType.request.value
+        msg['header']['messageType'] = Message.MessageType.REQUEST.value
         msg['header']['timestamp'] = 1
         testProxyService.call(msg)
         networkCore.send.assert_called_once_with(msg['header'], testMsg.pack(msg))
@@ -325,7 +325,7 @@ class TestService(unittest.TestCase):
         testProxyService = service.ProxyService(networkCore, source, topic, testMsg, testMsg, callback)
         def changeMsgTypeAndSend(header, msg):
             msg = testMsg.unpack(msg)[0]
-            msg['header']['messageType'] = Message.MessageType.response.value
+            msg['header']['messageType'] = Message.MessageType.RESPONSE.value
             testProxyService.sub.received(msg['header'], testMsg.pack(msg))
 
         networkCore.send.side_effect = changeMsgTypeAndSend
@@ -336,7 +336,7 @@ class TestService(unittest.TestCase):
         msg['header']['sequence'] = 0
         msg['header']['timestamp'] = 1
         testProxyService.call(msg)
-        msg['header']['messageType'] = Message.MessageType.response.value
+        msg['header']['messageType'] = Message.MessageType.RESPONSE.value
         callback.assert_called_once_with(msg)
 
 

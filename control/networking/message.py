@@ -129,10 +129,11 @@ class Message:
     class MessageType(Enum):
         '''Used in header to define what type of message is being published under the topic
         '''
-        publisher = b'\x00'
-        request = b'\x01'
-        response = b'\x02'
-        update = b'\x03'
+        PUBLISHER = b'\x00'
+        REQUEST = b'\x01'
+        RESPONSE = b'\x02'
+        STATUS = b'\x03'
+        RESULT = b'\x04'
 
 
 Message.Header = Message({

@@ -27,7 +27,7 @@ class Subscriber:
         if len(topic) > Message.NAME_LENGTH:
             raise ValueError("Topic of subscriber excedied maximum length of {} characters".format(Message.NAME_LENGTH))
         if type(messageType) != bytes:
-            raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.publisher.value")
+            raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.PUBLISHER.value")
         self.messageType = messageType
         self.source = Message.padString(source, Message.NAME_LENGTH)
         self.topic = Message.padString(topic, Message.NAME_LENGTH)

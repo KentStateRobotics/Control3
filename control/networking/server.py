@@ -14,7 +14,7 @@ class Server(NetworkCore):
         super().__init__(name, port, discoveryPort)
         self.clients = []
         self.alive = True
-        self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg, self._recSubRegister)
+        self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.PUBLISHER.value, messages.SubscriberMsg, self._recSubRegister)
         self.serverThread = Server.Thread(self)
         self.serverThread.start()
 

@@ -24,7 +24,7 @@ class Publisher:
         if len(topic) > Message.NAME_LENGTH:
             raise ValueError("Topic of publisher exceaded maximum length of {} characters".format(Message.NAME_LENGTH))
         if type(messageType) != bytes:
-            raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.publisher.value")
+            raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.PUBLISHER.value")
         self.networkCore = networkCore
         self.messageType = messageType
         if source is None:

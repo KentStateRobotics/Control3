@@ -15,8 +15,8 @@ class Service:
         def handleRequest(message):
             self.pub.publish(self.handle(message))
 
-        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.request.value, argumentMessage, handleRequest)
-        self.pub = Publisher(networkCore, source, topic, Message.MessageType.response.value, returnMessage)
+        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.REQUEST.value, argumentMessage, handleRequest)
+        self.pub = Publisher(networkCore, source, topic, Message.MessageType.RESPONSE.value, returnMessage)
 
     def close(self):
         self.networkCore.removeSubscriber(self.sub)
@@ -24,8 +24,8 @@ class Service:
 class ProxyService:
     def __init__(self, networkCore, source, topic, argumentMessage, returnMessage, callback):
         self.networkCore = networkCore
-        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.response.value, returnMessage, callback)
-        self.pub = Publisher(networkCore, source, topic, Message.MessageType.request.value, argumentMessage)
+        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.RESPONSE.value, returnMessage, callback)
+        self.pub = Publisher(networkCore, source, topic, Message.MessageType.REQUEST.value, argumentMessage)
 
     def call(self, arguments):
         self.pub.publish(arguments)
@@ -45,10 +45,11 @@ class ProxyServiceBlocking(ProxyService):
         super().__init__(networkCore, source, topic, argumentMessage, returnMessage, setReceivedMessage)
 
     def call(self, arguments, timeout):
+        self.receivedMessage = None
         super().call(arguments)
         startTime = time.time()
         while self.receivedMessage is None and startTime - time.time() < timeout:
-            time.sleep(POLL_INCREMENT)
+            time.sleep(ProxyServiceBlocking.POLL_INCREMENT)
         if self.receivedMessage is None:
              raise networkCore.TimeoutException("Service failed to resolve before timeout")
         else:

@@ -74,7 +74,7 @@ class TestMessage(unittest.TestCase):
         msg['header']['topic'] = Message.padString("topic", Message.NAME_LENGTH)
         msg['header']['timestamp'] = 703452.5
         msg['header']['sequence'] = 53
-        msg['header']['messageType'] = Message.MessageType.update.value
+        msg['header']['messageType'] = Message.MessageType.STATUS.value
         data = structMsg.pack(msg)
         unpackedData = structMsg.unpack(data)[0]
         self.assertEqual(msg, unpackedData)
@@ -91,7 +91,7 @@ class TestMessage(unittest.TestCase):
         msg['header']['topic'] = Message.padString("topic", Message.NAME_LENGTH)
         msg['header']['timestamp'] = 703452.5
         msg['header']['sequence'] = 53
-        msg['header']['messageType'] = Message.MessageType.update.value
+        msg['header']['messageType'] = Message.MessageType.STATUS.value
         data = structMsg.pack(msg)
         unpackedData = structMsg.unpack(data)[0]
         self.assertEqual(msg, unpackedData)

@@ -18,12 +18,14 @@ try:
     server = networking.Server("server", 4242, 4243)
     client = networking.Client("client", 4242, discoveryPort=4243, discoveryId="server")
     serverService = service.Service(server, "server", "increment", blobMsg, blobMsg, increment)
-    clientProxy = service.ProxyService(client, "server", "increment", blobMsg, blobMsg, printMsg)
+    #clientProxy = service.ProxyService(client, "server", "increment", blobMsg, blobMsg, printMsg)
+    clientBlockProxy = service.ProxyServiceBlocking(client, "server", "increment", blobMsg, blobMsg)
     while True:
         instuff = input()
         msg = blobMsg.getFormat()
         msg['blob'] = instuff
-        clientProxy.call(msg)
+        msg = clientBlockProxy.call(msg, 2)
+        print("Client received: " + msg['blob'].decode())
 except (KeyboardInterrupt):
     pass
 finally:

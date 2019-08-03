@@ -19,7 +19,7 @@ class Client(NetworkCore):
         self.messageQueue = []
         if not discoveryId is None:
             self.discoveryId = Message.padString(discoveryId, Message.NAME_LENGTH)
-        self.subcriberRegistrationPub = Publisher(self, self.name, Subscriber.REGISTRATION_TOPIC, Message.MessageType.publisher.value, messages.SubscriberMsg)
+        self.subcriberRegistrationPub = Publisher(self, self.name, Subscriber.REGISTRATION_TOPIC, Message.MessageType.PUBLISHER.value, messages.SubscriberMsg)
         self.clientThread = Client.Thread(self)
         self.clientThread.start()
 
