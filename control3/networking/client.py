@@ -83,7 +83,7 @@ class Client(NetworkCore):
                     self.client.close()
                     return
             try:
-                async with websockets.connect("ws://" + self.client.host + ":" + str(self.client.port)) as self.connection:
+                async with websockets.connect("ws://" + str(self.client.host) + ":" + str(self.client.port)) as self.connection:
                     print("Connection established")
                     for message in self.client.messageQueue:
                         asyncio.run_coroutine_threadsafe(self.connection.send(message), self.loop)
