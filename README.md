@@ -3,7 +3,8 @@
 
 # Setup
 ```
-cd RMC_Control
+cd control3
+pip install -r requirements.txt
 python setup.py develop
 ```
 or
