@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 '''
 action
-KentStateRobotics Jared Butcher 7/31/2019
+KentStateRobotics Jared Butcher 8/28/2019
+An action service. Action is created on a server and Action client is used to start the action.
+Status updates are expected to be sent from the server and the server is also expected to send 
+the results at the end.
+TODO: improve support for multiple clients
 '''
 from . import networkCore
 from .publisher import Publisher
@@ -9,6 +13,10 @@ from .message import Message
 import time
 
 class Action:
+    '''Create action and listen for commands. Implementing onCommand is required.
+    Command message is to contain a Command
+    Status and results are optional
+    '''
     def __init__(self, networkCore, source, topic, commandMessge, onCommand, statusMessage=None, resultMessage=None)
         self.commandMessge = commandMessge
         self.statusMessage = statusMessage
@@ -51,11 +59,12 @@ class Action:
         CLEAR = b'\x02' #Cancles all commands
         SKIP = b'\x03' #Cancles current command
 
-CommandBase = Message({
-    'command' = b'c'
-})
 
 class ActionClient:
+    '''Use to run and monitor an action
+    Command message is to contain a Command
+    Status and results are optional
+    '''
     def __init__(self, networkCore, source, topic, commandMessge, statusMessage=None, onStatus=None, resultMessage=None, onResult=None):
         self.commandMessge = commandMessge
         self.statusMessage = statusMessage

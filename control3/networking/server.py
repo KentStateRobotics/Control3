@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+'''
+server
+KentStateRobotics Jared Butcher 8/28/2019
+Networking server, all others must run client
+'''
 import websockets
 import threading
 import asyncio

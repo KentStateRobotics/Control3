@@ -306,7 +306,7 @@ class TestService(unittest.TestCase):
         networkCore = mock.MagicMock()
         networkCore.addSubscriber.side_effect = Subscriber
         callback = mock.MagicMock()
-        testProxyService = service.ProxyService(networkCore, source, topic, testMsg, testMsg, callback)
+        testProxyService = service.ServiceClient(networkCore, source, topic, testMsg, testMsg, callback)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         msg['header']['source'] = source
@@ -322,7 +322,7 @@ class TestService(unittest.TestCase):
         networkCore = mock.MagicMock()
         networkCore.addSubscriber.side_effect = Subscriber
         callback = mock.MagicMock()
-        testProxyService = service.ProxyService(networkCore, source, topic, testMsg, testMsg, callback)
+        testProxyService = service.ServiceClient(networkCore, source, topic, testMsg, testMsg, callback)
         def changeMsgTypeAndSend(header, msg):
             msg = testMsg.unpack(msg)[0]
             msg['header']['messageType'] = Message.MessageType.RESPONSE.value

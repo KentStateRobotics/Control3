@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+'''
+client
+KentStateRobotics Jared Butcher 8/28/2019
+A networking client based on a publisher / subcriber model
+'''
 import websockets
 import threading
 import asyncio

@@ -18,8 +18,8 @@ try:
     server = networking.Server("server", 4242, 4243)
     client = networking.Client("client", 4242, discoveryPort=4243, discoveryId="server")
     serverService = service.Service(server, "server", "increment", blobMsg, blobMsg, increment)
-    #clientProxy = service.ProxyService(client, "server", "increment", blobMsg, blobMsg, printMsg)
-    clientBlockProxy = service.ProxyServiceBlocking(client, "server", "increment", blobMsg, blobMsg)
+    #clientProxy = service.ServiceClient(client, "server", "increment", blobMsg, blobMsg, printMsg)
+    clientBlockProxy = service.ServiceClientBlocking(client, "server", "increment", blobMsg, blobMsg)
     while True:
         instuff = input()
         msg = blobMsg.getFormat()
