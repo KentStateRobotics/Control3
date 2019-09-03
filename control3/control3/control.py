@@ -1,6 +1,8 @@
 import argparse
 import networking
 import networking.message
+import pygame
+import client.gui
 
 def main():
     parser = argparse.ArgumentParser(description="Robot control client")
@@ -24,12 +26,22 @@ def main():
     else:
         networkCore = networking.Server(args.name, args.p, args.d)
 
+    pygame.init()
+    mainSurface = pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("Control 3.0")
+    clock = pygame.time.Clock()
+
     while True:
-        try:
-            command = input()
-        except KeyboardInterrupt:
-            command = 'e'
-        if command == 'e':
-            print("Closing")
-            networkCore.close()
-            return
+
+        for event in pygame.event.get():
+            print(event)
+            if event.type == pygame.QUIT:
+                print("Closing")
+                pygame.quit()
+                networkCore.close()
+
+        mainSurface.fill((255,255,255))
+        pygame.draw.rect(mainSurface, (255,0,0),(150,450,100,50))
+
+        clock.tick(60)
+        
