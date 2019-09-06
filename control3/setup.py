@@ -5,7 +5,7 @@ from Cython.Build import cythonize
 setuptools.setup(name='control3',
                  description='KSU robot control 3',
                  py_modules=['RMC_Control', 'networking'],
-                 install_requires=['websockets', 'pyserial', 'numpy', 'opencv-contrib-python', 'pygame'],
+                 install_requires=['websockets', 'pyserial', 'numpy', 'opencv-contrib-python', 'pygame', 'Cython'],
                  zip_safe=False,
                  tests_requires=['timeout-decorator'],
                  entry_points={
