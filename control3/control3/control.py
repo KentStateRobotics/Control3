@@ -27,21 +27,26 @@ def main():
         networkCore = networking.Server(args.name, args.p, args.d)
 
     pygame.init()
-    mainSurface = pygame.display.set_mode((800, 600))
+    mainSurface = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
     pygame.display.set_caption("Control 3.0")
     clock = pygame.time.Clock()
 
-    while True:
 
+
+    while True:
+        
         for event in pygame.event.get():
-            print(event)
             if event.type == pygame.QUIT:
                 print("Closing")
                 pygame.quit()
                 networkCore.close()
+            elif event.type == pygame.VIDEORESIZE:
+                mainSurface = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+                print(event)
+
 
         mainSurface.fill((255,255,255))
         pygame.draw.rect(mainSurface, (255,0,0),(150,450,100,50))
-
+        pygame.display.update()
         clock.tick(60)
         
