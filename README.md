@@ -48,4 +48,19 @@ python -m unittest
 ```
 
 # Maintance
-New exteral library dependencies from PyPI must be added to requirements.txt and setup.py
+New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires
+
+# Extentions
+Added new Cython modules or c extentions can be done by adding an extention to the setup.py file. Under ext_modules like so:
+```
+ext_modules=[
+  Extension("directory.cythonModule", ["directory/cythonModule.pyx"]),
+  Extension("directory.cExtention", sources = ["directory/cExtention.cpp"], )
+]
+```
+More details on c extentions:
+https://docs.python.org/3/extending/extending.html
+https://docs.python.org/3/extending/building.html
+
+More details on Cython:
+https://cython.readthedocs.io/en/latest/index.html
