@@ -1,6 +1,7 @@
 import argparse
 import networking
 import networking.message
+import debugScripts.cExtentionTest as cExtentionTest
 
 def main():
     parser = argparse.ArgumentParser(description="Robot controler")
@@ -16,6 +17,8 @@ def main():
         networkCore = networking.Client(args.n, args.p, args.a)
     else:
         pass
+
+    print(cExtentionTest.add(5,6))
 
     while True:
         try:
