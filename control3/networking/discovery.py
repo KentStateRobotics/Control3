@@ -40,10 +40,10 @@ class Discovery:
             except socket.timeout:
                 retries += 1
                 if retries >= tries:
-                    print("Failed to receive address from {} in {} atempts".format(id, retries))
+                    print("Failed to receive address from {} in {} atempts".format(id.decode("utf-8"), retries))
                     return None
                 else:
-                    print("Failed to receive address from {}, retrying".format(id))
+                    print("Failed to receive address from {}, retrying".format(id.decode("utf-8")))
 
     async def echoAddress(self, id, eventLoop):
         '''Run on server in event loop. Will pong pings for the id.
@@ -69,5 +69,7 @@ class Discovery:
         def connection_made(self, transport):
             self.transport = transport
         def datagram_received(self, data, address):
+            if type(data) == str:
+                data = data.encode('utf-8')
             if self.name == data:
                 self.transport.sendto(Discovery.RESPONSE, ('<broadcast>',address[1]))

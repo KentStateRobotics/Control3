@@ -40,25 +40,25 @@ optional arguments:
 ```
 
 # Testing
-Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery
+Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery. Use -b to suppress print statements, remove so see print statements
 
 ```
 cd control3/tests
-python -m unittest
+python -m unittest -b
 ```
 
 # Maintance
 New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires
 
-# Extentions
-Added new Cython modules or c extentions can be done by adding an extention to the setup.py file. Under ext_modules like so:
+# Extension
+Added new Cython modules or c extensions can be done by adding an extension to the setup.py file. Under ext_modules like so:
 ```
 ext_modules=[
   Extension("directory.cythonModule", ["directory/cythonModule.pyx"]),
-  Extension("directory.cExtention", sources = ["directory/cExtention.cpp"], )
+  Extension("directory.cExtension", sources = ["directory/cExtension.cpp"], )
 ]
 ```
-More details on c extentions:
+More details on c extensions:
 https://docs.python.org/3/extending/extending.html
 https://docs.python.org/3/extending/building.html
 
