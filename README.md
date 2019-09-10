@@ -46,7 +46,10 @@ Automated unit tests are put in the control3/testes directory and should be name
 cd control3/tests
 python -m unittest -b
 ```
-
+or
+```
+py -m unittest -b
+```
 # Maintance
 New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires
 
