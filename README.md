@@ -1,4 +1,4 @@
-# Control3.0
+# Control3
 2020 RMC Robot controller.
 
 # Setup
