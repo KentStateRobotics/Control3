@@ -3,7 +3,8 @@
 
 # Setup
 Install python 3 https://www.python.org/downloads/
-Make sure to check the box to automaticly add python to your path during the install
+Make sure to check the box to automaticly add python to your path during the install.
+Depending on your system, python may be need to be ran using the commands py or python3.
 
 ```
 cd control3
@@ -43,12 +44,11 @@ optional arguments:
 Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery. Use -b to suppress print statements, remove so see print statements
 
 ```
-cd control3/tests
-python -m unittest -b
+python setup.py test
 ```
 or
 ```
-py -m unittest -b
+py setup.py test
 ```
 # Maintance
 New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires

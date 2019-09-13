@@ -10,6 +10,7 @@ TODO: improve support for multiple clients
 from . import networkCore
 from .publisher import Publisher
 from .message import Message
+from enum import Enum
 import time
 
 class Action:
@@ -17,7 +18,7 @@ class Action:
     Command message is to contain a Command
     Status and results are optional
     '''
-    def __init__(self, networkCore, source, topic, commandMessge, onCommand, statusMessage=None, resultMessage=None)
+    def __init__(self, networkCore, source, topic, commandMessge, onCommand, statusMessage=None, resultMessage=None):
         self.commandMessge = commandMessge
         self.statusMessage = statusMessage
         self.resultMessage = resultMessage
