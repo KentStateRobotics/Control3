@@ -1,4 +1,3 @@
-import context
 from networking.message import Message
 import unittest
 from unittest import mock

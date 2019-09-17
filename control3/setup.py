@@ -1,8 +1,8 @@
-import setuptools
+from setuptools import setup, find_packages
 from Cython.Distutils import build_ext
 from setuptools.extension import Extension
 
-setuptools.setup(name='control3',
+setup(name='control3',
                  description='KSU robot control 3',
                  py_modules=['control3', 'networking'],
                  install_requires=['websockets', 'pyserial', 'numpy', 'opencv-contrib-python', 'pygame', 'Cython', 'timeout-decorator', 'pyopengl'],
