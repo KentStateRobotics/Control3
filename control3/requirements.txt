@@ -4,3 +4,4 @@ numpy
 opencv-contrib-python
 timeout-decorator
 Cython
+pyopengl
