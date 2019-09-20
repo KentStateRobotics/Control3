@@ -1,4 +1,3 @@
-import context
 from networking.discovery import Discovery
 import threading
 import asyncio
