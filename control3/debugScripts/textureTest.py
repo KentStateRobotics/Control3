@@ -2,7 +2,6 @@ import pygame
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 from OpenGL.GL import shaders
-from OpenGL.arrays import vbo
 import numpy as np
 import ctypes
 import cv2
@@ -13,14 +12,14 @@ verticies = np.array([
     (0,0,1,0,1),
     (0,1,0,1,0),
     (0,1,1,1,1),
-    (1,0,0,1,0),
+    (1,0,0,0,1),
     (1,0,1,1,1),
-    (1,1,0,0,0),
+    (1,1,0,1,1),
     (1,1,1,0,1)
 ], dtype=np.float32)
-vertBuffer = vbo.VBO(verticies)
 
-triangles = np.array([
+
+cube = np.array([
     (2,4,0),
     (4,1,0),
     (1,2,0),
@@ -34,7 +33,14 @@ triangles = np.array([
     (1,4,5),
     (7,1,5)
 ], dtype=np.uint16)
-triBuffer = vbo.VBO(triangles, target=gl.GL_ELEMENT_ARRAY_BUFFER)
+
+
+
+triangles = np.array([
+    (4,2,0),
+    (2,4,6)
+], dtype=np.uint16)
+
 
 
 def resize(width, height, options):
@@ -45,7 +51,6 @@ def resize(width, height, options):
     gl.glEnable(gl.GL_DEPTH_TEST)
     gl.glEnable(gl.GL_TEXTURE_2D)
     gl.glClearColor (0.0, 0.5, 0.5, 1.0)
-    gl.glEnableClientState (gl.GL_VERTEX_ARRAY)
     
     vbo = gl.glGenBuffers(1)
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
@@ -67,15 +72,20 @@ def resize(width, height, options):
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
-
+    
     indiceVbo = gl.glGenBuffers(1)
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, indiceVbo)
     gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(triangles) * 2 * 3, triangles, gl.GL_STATIC_DRAW)
 
+    
+    cubeVbo = gl.glGenBuffers(1)
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, cubeVbo)
+    gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(cube) * 12 * 3, cube, gl.GL_STATIC_DRAW)
+
     VERTEX_SHADER = shaders.compileShader(open('../client/shaders/menu.vsh').read(), gl.GL_VERTEX_SHADER)
     FRAGMENT_SHADER = shaders.compileShader(open('../client/shaders/menu.fsh').read(), gl.GL_FRAGMENT_SHADER)
 
-    return shaders.compileProgram(VERTEX_SHADER,FRAGMENT_SHADER)
+    return shaders.compileProgram(VERTEX_SHADER,FRAGMENT_SHADER), indiceVbo, cubeVbo
     
 
 
@@ -83,7 +93,7 @@ def main():
     pygame.init()
     displayOptions = pygame.DOUBLEBUF|pygame.OPENGL|pygame.RESIZABLE|pygame.HWSURFACE
 
-    shader = resize(800, 600, displayOptions)
+    shader, indiceVbo, cubeVbo = resize(800, 600, displayOptions)
 
     angle = 0
 
@@ -94,21 +104,39 @@ def main():
                 pygame.quit()
             elif event.type == pygame.VIDEORESIZE:
                 print(event.size)
-                shader = resize(event.w, event.h, displayOptions)
+                shader, indiceVbo, cubeVbo = resize(event.w, event.h, displayOptions)
         gl.glClear (gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
         gl.glUseProgram(shader)
         MVP = gl.glGetUniformLocation(shader, 'MVP')
+        tint = gl.glGetUniformLocation(shader, 'tint')
         gl.glUniformMatrix4fv(MVP, 1, gl.GL_FALSE, gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX))
+        gl.glUniform4fv(tint, 1, (1,1,1,1))
 
-        gl.glDrawElements(gl.GL_TRIANGLES, 12 * 3, gl.GL_UNSIGNED_SHORT, None)
+        #gl.glDrawElements(gl.GL_TRIANGLES, 12 * 3, gl.GL_UNSIGNED_SHORT, None)
+        
+        gl.glPushMatrix()
+        gl.glLoadIdentity()
+        gl.glUniformMatrix4fv(MVP, 1, gl.GL_FALSE, gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX))
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, indiceVbo)
+        gl.glDrawElements(gl.GL_TRIANGLES, 2 * 3, gl.GL_UNSIGNED_SHORT, None)
+        gl.glPopMatrix()
 
         gl.glPushMatrix()
-        gl.glTranslatef(-1.5, 0, 0)
+        gl.glTranslatef(-1.5, -.5, 0)
         angle += 1
         gl.glRotatef(angle, 1, 0, 0)
         gl.glUniformMatrix4fv(MVP, 1, gl.GL_FALSE, gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX))
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, cubeVbo)
         gl.glDrawElements(gl.GL_TRIANGLES, 12 * 3, gl.GL_UNSIGNED_SHORT, None)
+        gl.glPopMatrix()
+
+        gl.glPushMatrix()
+        gl.glTranslatef(-1.5, 1, 0)
+        gl.glRotatef(angle, 1, 0, 0)
+        gl.glUniformMatrix4fv(MVP, 1, gl.GL_FALSE, gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX))
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, indiceVbo)
+        gl.glDrawElements(gl.GL_TRIANGLES, 2 * 3, gl.GL_UNSIGNED_SHORT, None)
         gl.glPopMatrix()
 
         pygame.display.flip()
