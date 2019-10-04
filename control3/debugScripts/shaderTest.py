@@ -39,7 +39,7 @@ def resize(width, height, options):
     pygame.display.set_mode((width, height), options)
     glu.gluPerspective(45, width / height, 0.1, 50.0)
     gl.glTranslatef(0.0, 0.0, -5)
-    #gl.glEnable(gl.GL_CULL_FACE)
+    gl.glEnable(gl.GL_CULL_FACE)
     #gl.glEnable(gl.GL_DEPTH_TEST)
     gl.glClearColor (0.0, 0.5, 0.5, 1.0)
     gl.glEnableClientState (gl.GL_VERTEX_ARRAY)
