@@ -82,8 +82,15 @@ def resize(width, height, options):
     gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, cubeVbo)
     gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(cube) * 12 * 3, cube, gl.GL_STATIC_DRAW)
 
-    VERTEX_SHADER = shaders.compileShader(open('../client/shaders/menu.vsh').read(), gl.GL_VERTEX_SHADER)
-    FRAGMENT_SHADER = shaders.compileShader(open('../client/shaders/menu.fsh').read(), gl.GL_FRAGMENT_SHADER)
+    #VERTEX_SHADER = shaders.compileShader(open('../client/shaders/menu.vsh').read(), gl.GL_VERTEX_SHADER)
+    #FRAGMENT_SHADER = shaders.compileShader(open('../client/shaders/menu.fsh').read(), gl.GL_FRAGMENT_SHADER)
+
+    VERTEX_SHADER = gl.glCreateShader(gl.GL_VERTEX_SHADER)
+    gl.glShaderSource(VERTEX_SHADER, open('../client/shaders/menu.vsh').read())
+    gl.glCompileShader(VERTEX_SHADER)
+    FRAGMENT_SHADER = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
+    gl.glShaderSource(FRAGMENT_SHADER, open('../client/shaders/menu.fsh').read())
+    gl.glCompileShader(FRAGMENT_SHADER)
 
     return shaders.compileProgram(VERTEX_SHADER,FRAGMENT_SHADER), indiceVbo, cubeVbo
     
