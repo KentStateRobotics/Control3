@@ -6,7 +6,7 @@ setup(
     name='control3',
     description='KSU robot control 3',
     py_modules=['control3', 'networking'],
-    install_requires=['websockets', 'pyserial', 'numpy', 'opencv-contrib-python', 'pygame', 'Cython', 'timeout-decorator', 'pyopengl'],
+    install_requires=['websockets', 'pyserial', 'numpy', 'opencv-contrib-python', 'pyglet', 'Cython', 'timeout-decorator'],
     zip_safe=False,
     entry_points={
         'console_scripts':[
