@@ -14,7 +14,7 @@ win1MainBatch = pyglet.graphics.Batch()
 kitakami = pyglet.sprite.Sprite(img=img, x = 400, y = 400, batch=win1MainBatch)
 
 ranLable = pyglet.text.Label(text="AHHHH", font_size=70, x=10, y=200, batch=win1MainBatch)
-
+'''
 verticies = np.array([
     (0,0,0,0,0),
     (0,0,1,0,1),
@@ -25,7 +25,7 @@ verticies = np.array([
     (1,1,0,1,1),
     (1,1,1,0,1)
 ], dtype=np.float32)
-pyglet.graphics.vertexbuffer()
+pyglet.graphics.vertexbuffer()'''
 
 counter = 0
 crossLabel = pyglet.text.Label(text="Cross: " + str(counter), font_size=36, x=10, y=200)

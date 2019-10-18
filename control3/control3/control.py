@@ -1,9 +1,9 @@
 import argparse
 import networking
 import networking.message
-import pygame
-from OpenGL import GL
-import client.gui
+import pyglet
+from pyglet.gl import gl
+import client.guiWindows as guiWindows
 
 def main():
     parser = argparse.ArgumentParser(description="Robot control client")
@@ -26,22 +26,12 @@ def main():
     else:
         networkCore = networking.Server(args.n, args.p, args.d)
 
-    pygame.init()
-    mainSurface = pygame.display.set_mode((800, 600), pygame.RESIZABLE | pygame.OPENGL | pygame.DOUBLEBUF)
-    pygame.display.set_caption("Control 3.0")
-    clock = pygame.time.Clock()
+    try:
+        mainWindow = guiWindows.MainMenu()
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                print("Closing")
-                pygame.quit()
-                networkCore.close()
-            elif event.type == pygame.VIDEORESIZE:
-                mainSurface = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE | pygame.OPENGL | pygame.DOUBLEBUF)
-                print(event)
-                    
-        pygame.draw.rect(mainSurface, (255,0,0),(150,450,100,50))
-        clock.tick(60)
+        pyglet.app.run()
+    finally:
+        print("Closing Controller")
+        networkCore.close()
     
         
