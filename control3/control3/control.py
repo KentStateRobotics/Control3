@@ -27,7 +27,8 @@ def main():
         networkCore = networking.Server(args.n, args.p, args.d)
 
     try:
-        mainWindow = guiWindows.MainMenu()
+        mainWindow = guiWindows.GuiTestMenu()
+        otherWindow = guiWindows.GuiTestMenu()
 
         pyglet.app.run()
     finally:

@@ -11,7 +11,7 @@ class ControlWindow(pyglet.window.Window):
     """Menu windows should inheret this
     Valid events can be found https://pyglet.readthedocs.io/en/stable/modules/window.html
     Some useful ones incude:
-        on_close()
+        on_close() - When window is closed
         on_resize(width, height)
         on_draw()
         on_activate() - Window in is focus and can receive input
@@ -40,7 +40,6 @@ class ControlWindow(pyglet.window.Window):
         if button == pyglet.window.mouse.LEFT:
             for element in self.elements:
                 elm = element.checkClick(x, y)
-                print(elm)
                 if not elm is None:
                     self.elementHeldDown = elm
                     break
@@ -51,18 +50,17 @@ class ControlWindow(pyglet.window.Window):
                 self.elementHeldDown.release()
                 self.elementHeldDown = None
 
-
     def on_draw(self):
         self.clear()
         for element in self.elements:
             element.draw()
-        print("draw")
 
-class MainMenu(ControlWindow):
+class GuiTestMenu(ControlWindow):
     def __init__(self):
         super().__init__()
         rectangle = guiElements.GuiRectangle(100, 100, 200, 200, onClick= lambda: True)
         self.addElement(rectangle)
         rectangle.addChild(guiElements.GuiElement(20, 5, pyglet.text.Label(text="Cross: " + str(5), font_size=24)))
+        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50))
         
 
