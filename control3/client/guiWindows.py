@@ -60,7 +60,11 @@ class GuiTestMenu(ControlWindow):
         super().__init__()
         rectangle = guiElements.GuiRectangle(100, 100, 200, 200, onClick= lambda: True)
         self.addElement(rectangle)
+        test = guiElements.GuiText(300, 300, pyglet.text.Label(text="AHHHH", font_size=70))
+        def changeText():
+            test.editText("hi")
+            print("clicked")
         rectangle.addChild(guiElements.GuiElement(20, 5, pyglet.text.Label(text="Cross: " + str(5), font_size=24)))
-        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50))
-        
+        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50, onClick=changeText))
+        self.addElement(test)    
 

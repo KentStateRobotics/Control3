@@ -146,27 +146,58 @@ class GuiImage(GuiPressable):
         sprite.update(rotation=rotation, scale_x=xScale, scale_y=yScale)
         super().__init__(x, y, sprite.width, sprite.height, sprite, onClick)
 
+class GuiText(GuiElement):
+    def __init__(self, x, y, label):
+        super().__init__(x, y, label)
+    
+    def editText(self, text):
+        self._drawable.text = text
+
+
 class GuiStaticBatch(GuiElement):
     '''Static area of GUI with multiple triangle based shapes. Will all be rendered in a single batch for efficiently
     Args:
         x (int) - x position relitive to parent
         y (int) - y position relitive to parent
-        vertexs ((float)) - A SINGLE truple or list of pairs of vertexes to be drawn in 2D triangles. 
-            Triangle verticies must be given in counter clockwise order.
-            ex: (0, 0, 5, 0, 0, 10, 0, 10, 5, 0, 5, 10) - Creates a rectangle
-        colors ((int)) - A SINGLE truple or list of colors that map one to one to each vertex.
-            Or a single color to be assinged to all vertices.
-            Colors are defined by four bytes(0-255) in the order Red, Green, Blue, Alpha.
-            ex: 
-                (255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255) - For a single red triangle
-                (0, 255, 0, 255) - Sets all vertices to green
     '''
-    def __init__(self, x, y, vertexs, colors):
+    def __init__(self, x, y):
+        self._batch = pyglet.graphics.Batch()
+        super().__init__(x, y, self._batch)
+
+    def addVertexList(self, x, y, vertexs, colors):
+        """Add a vertex list to the batch
+        Args:
+            x (int) - x position relitive to batch
+            y (int) - y position relitive to batch
+            vertexs ((float)) - A SINGLE truple or list of pairs of vertexes to be drawn in 2D triangles. 
+                Triangle verticies must be given in counter clockwise order.
+                ex: (0, 0, 5, 0, 0, 10, 0, 10, 5, 0, 5, 10) - Creates a rectangle
+            colors ((int)) - A SINGLE truple or list of colors that map one to one to each vertex.
+                Or a single color to be assinged to all vertices.
+                Colors are defined by four bytes(0-255) in the order Red, Green, Blue, Alpha.
+                ex: 
+                    (255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255) - For a single red triangle
+                    (0, 255, 0, 255) - Sets all vertices to green
+        """
         if len(colors) == 4 and len(colors) != len(vertexs):
             colors = colors * len(vertexs)
-        batch = pyglet.graphics.Batch()
-        self._vertList = batch.add(len(vertexs), gl.GL_TRIANGLES, None,
+        self._vertList = self._batch.add(len(vertexs), gl.GL_TRIANGLES, None,
             ('v2f', vertexs),
             ('c4B', colors)
         )
-        super().__init__(x, y, batch)
+
+    def addHTML(self, x, y, text, location=None, width=None, height=None, anchor_x='left', 
+    anchor_y='baseline', multiline=False, dpi=None):
+        """Good luck https://pyglet.readthedocs.io/en/stable/modules/text/index.html
+        """
+        pyglet.text.HTMLLabel(text=text, x=x, y=y, location=location, width=width, height=height,
+        anchor_x=anchor_x, anchor_y=anchor_y, multiline=False, dpi=dpi, batch=self._batch)
+
+    def addText(self, x, y, text, font_name="Times New Roman", font_size=24, bold=False, italic=False, 
+    color=(0,0,0,255), width=None, height=None, anchor_x='left', anchor_y='baseline', align='left', 
+    multiline=False, dpi=None):
+        """Good luck https://pyglet.readthedocs.io/en/stable/modules/text/index.html
+        """
+        pyglet.text.Label(text=text, x=x, y=y, font_name=font_name, font_size=font_size, bold=bold,
+        italic=italic, color=color, width=width, height=height, anchor_x=anchor_x, anchor_y=anchor_y,
+        align=align, multiline=multiline, dpi=dpi, batch=self._batch)
