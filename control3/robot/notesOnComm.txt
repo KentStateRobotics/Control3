@@ -1,0 +1,3 @@
+- arduino needs to recieve messages and send messages
+- python object to send and recieve messages
+    - python also has to connect to the arduino
