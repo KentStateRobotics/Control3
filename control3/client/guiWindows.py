@@ -38,7 +38,7 @@ class ControlWindow(pyglet.window.Window):
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == pyglet.window.mouse.LEFT:
-            for element in self.elements:
+            for element in reversed(self.elements):
                 elm = element.checkClick(x, y)
                 if not elm is None:
                     self.elementHeldDown = elm
@@ -58,9 +58,9 @@ class ControlWindow(pyglet.window.Window):
 class GuiTestMenu(ControlWindow):
     def __init__(self):
         super().__init__()
-        rectangle = guiElements.GuiRectangle(100, 100, 200, 200, onClick= lambda: True)
+        rectangle = guiElements.GuiRectangle(100, 100, 200, 200, onClick=lambda: print("yo"))
         self.addElement(rectangle)
         rectangle.addChild(guiElements.GuiElement(20, 5, pyglet.text.Label(text="Cross: " + str(5), font_size=24)))
-        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50))
+        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50, onClick=lambda: print("hi")))
         
 

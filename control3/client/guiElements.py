@@ -6,6 +6,9 @@ KentStateRobotics Jared Butcher 10/18/2019
 import pyglet
 from pyglet.gl import gl
 
+#TODO Add text class
+#TODO Improve static batch
+
 class GuiElement:
     """Base class for gui elements. Given x and y will be added to any offset the drawable
     already has and to all children.
@@ -76,8 +79,8 @@ class GuiPressable(GuiElement):
 
     def checkClick(self, x, y):
         if not self._hidden:
-            for child in self._children:
-                elm = child.checkClick(x + self._x, y + self._y)
+            for child in reversed(self._children):
+                elm = child.checkClick(x - self._x, y - self._y)
                 if not elm is None:
                     return elm
             if not self._onClick is None and self._x <= x <= self._x + self._width and self._y <= y <= self._y + self._height:
