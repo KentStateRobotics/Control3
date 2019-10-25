@@ -28,7 +28,7 @@ def main():
 
     try:
         mainWindow = guiWindows.GuiTestMenu()
-        otherWindow = guiWindows.GuiTestMenu()
+        #otherWindow = guiWindows.GuiTestMenu()
 
         pyglet.app.run()
     finally:

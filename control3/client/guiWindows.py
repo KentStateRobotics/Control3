@@ -39,7 +39,7 @@ class ControlWindow(pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == pyglet.window.mouse.LEFT:
             for element in reversed(self.elements):
-                elm = element.checkClick(x, y)
+                elm = element.checkClick((x, y))
                 if not elm is None:
                     self.elementHeldDown = elm
                     break
@@ -52,19 +52,22 @@ class ControlWindow(pyglet.window.Window):
 
     def on_draw(self):
         self.clear()
-        for element in self.elements:
-            element.draw()
+        try:
+            for element in self.elements:
+                element.draw(self.get_size())
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            
 
 class GuiTestMenu(ControlWindow):
     def __init__(self):
         super().__init__()
-        rectangle = guiElements.GuiRectangle(100, 100, 200, 200, onClick=lambda: print("yo"))
+        rectangle = guiElements.GuiRectangle(200, 200, .2, .2, relativity=(False, False, True, True),onClick=lambda: print("yo"))
         self.addElement(rectangle)
-        test = guiElements.GuiText(300, 300, pyglet.text.Label(text="AHHHH", font_size=70))
-        def changeText():
-            test.editText("hi")
-            print("clicked")
-        rectangle.addChild(guiElements.GuiElement(20, 5, pyglet.text.Label(text="Cross: " + str(5), font_size=24)))
-        self.addElement(guiElements.GuiImage(200, 200, "control3/debugScripts/testTexture.jpg", imgX=50, imgY=50, imgHeight=50, imgWidth=50, onClick=changeText))
-        self.addElement(test)    
+        rectangle.addChild(guiElements.GuiRectangle(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True),onClick=lambda: print("yoyo")))
+
+        self.addElement(guiElements.GuiRectangle(.8, .8, width=.1, maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
+
+        self.addElement(guiElements.GuiImage("control3/debugScripts/testTexture.jpg", 0, 0, width=.1, maintainAspectRatio=1, relativity=(False, False, True, False)))
 
