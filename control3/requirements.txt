@@ -5,3 +5,4 @@ opencv-contrib-python
 timeout-decorator
 Cython
 pyglet
+pyrealsense2
