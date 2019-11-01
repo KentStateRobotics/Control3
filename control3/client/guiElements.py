@@ -2,6 +2,8 @@
 '''
 gui Elements
 KentStateRobotics Jared Butcher 10/18/2019
+Defines a set of drawable gui elements and base classes. The most important feature it addes is 
+nesting, hidding, and relitive positioning and sizeing.
 '''
 import pyglet
 from pyglet.gl import gl
@@ -9,7 +11,13 @@ from pyglet.gl import gl
 
 class GuiElement:
     """Base class for gui elements. Given x and y will be added to any offset the drawable
-    already has and to all children.
+    already has and all of the children.
+    x and y are always required, can be given in pixles. Or, if relativeity positions 0 and/or 1 are set to true for x and y
+    respectively, it will be given on a scale from 0 - 1 to represent where relitive to the width/height of the 
+    parent it should be placed. 
+    Width and height work the same way with relativeity positions 2 and/or 3 respectively.
+    If maintainAspectRatio is set to a value then either width or height may be omitted and 
+    the omitted dimention's value will be infered. 
 
     Args:
         drawable (batch, lable, ...) - any type that can be drawn with the draw() method with no parameters
@@ -21,8 +29,9 @@ class GuiElement:
         relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
             False - absolute pixles
             True - relitive ratio
+        onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     """
-    def __init__(self, drawable, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False)):
+    def __init__(self, drawable, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), onClick=None):
         if (width is None or height is None) and maintainAspectRatio is None:
             raise TypeError("width and height must be set is maintainAspectRatio is not")
         elif width is None and height is None:
@@ -36,11 +45,12 @@ class GuiElement:
         self._maintainAspectRatio = maintainAspectRatio
         self._relativity = relativity
         self._drawable = drawable
+        self._onClick = onClick
 
-    def addChild(self, element):
+    def addElement(self, element):
         self._children.append(element)
 
-    def removeChild(self, element):
+    def removeElement(self, element):
         self._children.remove(element)
 
     def hide(self, hide):
@@ -87,13 +97,6 @@ class GuiElement:
             gl.glPushMatrix()
             gl.glTranslatef(self._pos[0], self._pos[1], 0)
             gl.glPushMatrix()
-            #print(parentSize)
-            #print(self._pos)
-            #print(self._size)
-            print("ELM")
-            print(self._defaultSize)
-            print(self._size)
-            print(scale)
             gl.glScalef(scale[0], scale[1], 1)
             self._drawable.draw()
             gl.glPopMatrix()
@@ -101,54 +104,32 @@ class GuiElement:
                 child.draw(self._size)
             gl.glPopMatrix()
 
-    def checkClick(self, pos):
+    def checkClick(self, pos, originalPos):
         if not self._hidden:
             for child in self._children:
-                elm = child.checkClick((pos[0] + self._pos[0], pos[1] + self._pos[1]))
+                elm = child.checkClick((pos[0] + self._pos[0], pos[1] + self._pos[1]), originalPos)
                 if not elm is None:
                     return elm
         return None
 
-
-
-class GuiPressable(GuiElement):
-    '''A rectangular gui element that can be clicked on
-        Args:
-            drawable (batch, lable, ...) - any type that can be drawn with the draw() method with no parameters
-            x (int | float) - x location to draw relitive to parent, can be pixles or ratio
-            y (int | float) - y location to draw relitive to parent, can be pixles or ratio
-            width (int | float) - width of clickable area, can be pixles or ratio
-            height (int | float) - height of clickable area, can be pixles or ratio
-            maintainAspectRatio (float) - If and only if a single dimension argument is given, will automaticly scale the second one
-            relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
-                False - absolute pixles
-                True - relitive ratio
-            onClick (float : optional) - callback function if image is clicked on
-    '''
-    def __init__(self, drawable, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), onClick=None):
-        self._onClick = onClick
-        super().__init__(drawable, x, y, width, height, maintainAspectRatio, relativity)
-
-    def checkClick(self, pos):
+    def checkClick(self, pos, originalPos):
         if not self._hidden:
             for child in reversed(self._children):
-                elm = child.checkClick((pos[0] - self._pos[0], pos[1] - self._pos[1]))
+                elm = child.checkClick((pos[0] - self._pos[0], pos[1] - self._pos[1]), originalPos)
                 if not elm is None:
                     return elm
             if not self._onClick is None and self._pos[0] <= pos[0] <= self._pos[0] + self._size[0] and self._pos[1] <= pos[1] <= self._pos[1] + self._size[1]:
-                self.pressed()
+                self.pressed(pos, originalPos)
                 return self
         return None
     
-    def pressed(self):
-        self._onClick()
+    def pressed(self, pos, originalPos):
+        self._onClick(pos, originalPos)
 
     def release(self):
         pass
 
-
-
-class GuiRectangle(GuiPressable):
+class GuiButton(GuiElement):
     '''A rectangular gui element that can drawn and clicked on. Will shade when pressed
         Args:
             drawable (batch, lable, ...) - any type that can be drawn with the draw() method with no parameters
@@ -161,11 +142,16 @@ class GuiRectangle(GuiPressable):
                 False - absolute pixles
                 True - relitive ratio
             color ((int, int, int, int) : optional) - color to draw rectangle, defaults to white
-            onClick (float : optional) - callback function if image is clicked on
+            onClickColor ((int, int, int, int) : optional) - color to change to when clicked, by default a darker version of the normal color
+            onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None):
+    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None, onClickColor=None):
         batch = pyglet.graphics.Batch()
         self._color = color
+        if onClickColor is None:
+            self._onClickColor = [*[int(x * .8) for x in color[:3]], color[3]] * 6
+        else:
+            self._onClickColor = onClickColor
         size = [width, height]
         if width is None:
             size[0] = 1
@@ -177,17 +163,67 @@ class GuiRectangle(GuiPressable):
         )
         super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
 
-    def pressed(self):
+    def pressed(self, pos, originalPos):
         self._onClick()
         #Set the color for each vertex to .8 its current value without effecting transparency
         self._vertList.colors = [*[int(x * .8) for x in self._color[:3]], self._color[3]] * 6
 
+    def setOnClickColor(self, color):
+        self._onClickColor = color
+
+    def setColor(self, color):
+        self._color = color
+
     def release(self):
         self._vertList.colors = self._color * 6
 
+class GuiVertexArray(GuiElement):
+    '''Draws the given vertex array
+        Args:
+            vertexs ((float)) - A SINGLE truple or list of pairs of vertexes to be drawn in 2D triangles. 
+                Triangle verticies must be given in counter clockwise order.
+                ex: (0, 0, 5, 0, 0, 10, 0, 10, 5, 0, 5, 10) - Creates a rectangle
+            colors ((int)) - A SINGLE truple or list of colors that map one to one to each vertex.
+                Or a single color to be assinged to all vertices.
+                Colors are defined by four bytes(0-255) in the order Red, Green, Blue, Alpha.
+                ex: 
+                    (255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255) - For a single red triangle
+                    (0, 255, 0, 255) - Sets all vertices to green
+            x (int | float) - x location to draw relitive to parent, can be pixles or ratio
+            y (int | float) - y location to draw relitive to parent, can be pixles or ratio
+            indices ((int), Optional) - For defining triangles by there indexs in the vertex list
+            width (int | float) - width of clickable area, can be pixles or ratio
+            height (int | float) - height of clickable area, can be pixles or ratio
+            maintainAspectRatio (float) - If and only if a single dimension argument is given, will automaticly scale the second one
+            relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
+                False - absolute pixles
+                True - relitive ratio
+            color ((int, int, int, int) : optional) - color to draw rectangle, defaults to white
+            onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
+    '''
+    def __init__(self, vertexs, colors, x, y, indices=None, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None):
+        self.setVertexes(vertexs, colors, indices)
+        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
 
+    def setVertexes(self, vertexs, colors, indices=None):
+        '''See __init__
+        '''
+        batch = pyglet.graphics.Batch()
+        if len(colors) == 4 and len(colors) != len(vertexs):
+            colors = colors * len(vertexs)
+        if indice is None:
+            self._vertList = self._batch.add(len(vertexs), gl.GL_TRIANGLES, None,
+                ('v2f', vertexs),
+                ('c4B', colors)
+            )
+        else:
+            self._vertList = self._batch.add_indexed(len(vertexs), gl.GL_TRIANGLES, None, indices
+                ('v2f', vertexs),
+                ('c4B', colors)
+            )
+        self._drawable = batch
 
-class GuiImage(GuiPressable):
+class GuiImage(GuiElement):
     '''Draw an image that may be clickable to the screen
         Args:
             img (str, pyglet.image) - either img path or pyglet image object
@@ -204,7 +240,7 @@ class GuiImage(GuiPressable):
             imgY (int : optional) - y position of subimage
             imgHeight (int : optional) - height of subimage, defaults to maximum size
             imgWidth (int : optional) - width of subimage, defaults to maximum size
-            onClick (function() : optional) - callback function if image is clicked on
+            onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
     def __init__(self, img, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), rotation=0, imgX=None, imgY=None, imgHeight=None, imgWidth=None, onClick=None):
         if type(img) == str:
@@ -240,22 +276,8 @@ class GuiImage(GuiPressable):
         return (int(size[0]), int(size[1])), scale
 
 
-
-        if self._maintainAspectRatio:
-            if self._defaultSize[0] is None:
-                size = [self._maintainAspectRatio * adjSize[1], adjSize[1]]
-            else:
-                size = [adjSize[0], self._maintainAspectRatio * adjSize[0]]
-        else:
-            size = [self._defaultSize[0] * (self._defaultSize[0] / self._drawable.width), self._defaultSize[1] * (self._defaultSize[1] / self._drawable.height)]
-        if self._relativity[3]:
-            size[1] *= parentSize[1]
-        if self._relativity[2]:
-            size[0] *= parentSize[0]
-        return (int(size[0]), int(size[1]))
-
 class GuiText(GuiElement):
-    '''Draw text or HTML
+    '''Draw text or HTML, cannot be clickable
         Args:
             label (pyglet.text.HTMLLabel | pyglet.text.Label) - a drawable object with a text attribute
             x (int | float) - x location to draw relitive to parent, can be pixles or ratio
@@ -299,7 +321,7 @@ class GuiStaticBatch(GuiElement):
         self._batch = pyglet.graphics.Batch()
         super().__init__(self._batch, x, y, width, height, maintainAspectRatio, relativity)
 
-    def addVertexList(self, x, y, vertexs, colors):
+    def addVertexList(self, x, y, vertexs, colors, indices=None):
         """Add a vertex list to the batch
         Args:
             x (int) - x position relitive to batch
@@ -313,13 +335,20 @@ class GuiStaticBatch(GuiElement):
                 ex: 
                     (255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255) - For a single red triangle
                     (0, 255, 0, 255) - Sets all vertices to green
+            indices ((int), Optional) - For defining triangles by there indexs in the vertex list
         """
         if len(colors) == 4 and len(colors) != len(vertexs):
             colors = colors * len(vertexs)
-        self._vertList = self._batch.add(len(vertexs), gl.GL_TRIANGLES, None,
-            ('v2f', vertexs),
-            ('c4B', colors)
-        )
+        if indice is None:
+            self._vertList = self._batch.add(len(vertexs), gl.GL_TRIANGLES, None,
+                ('v2f', vertexs),
+                ('c4B', colors)
+            )
+        else:
+            self._vertList = self._batch.add_indexed(len(vertexs), gl.GL_TRIANGLES, None, indices
+                ('v2f', vertexs),
+                ('c4B', colors)
+            )
 
     def getBatch(self):
         '''Returns this elements batch object to allow manual adding of pygle drawable objects

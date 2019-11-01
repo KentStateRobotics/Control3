@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 '''
-gui Windows
-KentStateRobotics Jared Butcher 7/31/2019
+GUI Windows
+KentStateRobotics Jared Butcher 11/1/2019
+
+Spicific, seperate windows (ex: main window, camera view) will inheret from ControlWindow 
+which inhertes from pyglet.window.Window.
+The ControlWindow class is required for using the guiElements graphical elements.
+Windows can override events beloning to the pyglet window.
 '''
 import pyglet
 from pyglet.gl import gl
@@ -9,6 +14,9 @@ import client.guiElements as guiElements
 
 class ControlWindow(pyglet.window.Window):
     """Menu windows should inheret this
+    Add gui elements to the by using addElement.
+    Events belonging to pyglet window can be overriden. 
+    If mouse_press, mouse_release, and on_draw are overriden call the versions in this class as well.
     Valid events can be found https://pyglet.readthedocs.io/en/stable/modules/window.html
     Some useful ones incude:
         on_close() - When window is closed
@@ -39,7 +47,7 @@ class ControlWindow(pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == pyglet.window.mouse.LEFT:
             for element in reversed(self.elements):
-                elm = element.checkClick((x, y))
+                elm = element.checkClick((x, y), (x, y))
                 if not elm is None:
                     self.elementHeldDown = elm
                     break
@@ -63,11 +71,11 @@ class ControlWindow(pyglet.window.Window):
 class GuiTestMenu(ControlWindow):
     def __init__(self):
         super().__init__()
-        rectangle = guiElements.GuiRectangle(200, 200, .2, .2, relativity=(False, False, True, True),onClick=lambda: print("yo"))
+        rectangle = guiElements.GuiButton(200, 200, .2, .2, relativity=(False, False, True, True),onClick=lambda: print("yo"))
         self.addElement(rectangle)
-        rectangle.addChild(guiElements.GuiRectangle(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True),onClick=lambda: print("yoyo")))
+        rectangle.addElement(guiElements.GuiButton(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True),onClick=lambda: print("yoyo")))
 
-        self.addElement(guiElements.GuiRectangle(.8, .8, width=.1, maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
+        self.addElement(guiElements.GuiButton(.8, .8, width=.1, maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
 
         self.addElement(guiElements.GuiImage("control3/debugScripts/testTexture.jpg", 0, 0, width=.1, maintainAspectRatio=1, relativity=(False, False, True, False)))
 
