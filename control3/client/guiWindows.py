@@ -37,6 +37,8 @@ class ControlWindow(pyglet.window.Window):
         super().__init__(resizable=True)
         self.elements = []
         self.elementHeldDown = None
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
     def addElement(self, element):
         self.elements.append(element)
@@ -75,7 +77,7 @@ class GuiTestMenu(ControlWindow):
         self.addElement(rectangle)
         rectangle.addElement(guiElements.GuiButton(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True),onClick=lambda: print("yoyo")))
 
-        self.addElement(guiElements.GuiButton(.8, .8, width=.1, maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
+        self.addElement(guiElements.GuiButton(.8, .8, width=.1, onClickColor=(0,255,255,0), maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
 
         self.addElement(guiElements.GuiImage("control3/debugScripts/testTexture.jpg", 0, 0, width=.1, maintainAspectRatio=1, relativity=(False, False, True, False)))
 

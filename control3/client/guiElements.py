@@ -147,11 +147,11 @@ class GuiButton(GuiElement):
     '''
     def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None, onClickColor=None):
         batch = pyglet.graphics.Batch()
-        self._color = color
+        self._color = list(color) * 6
         if onClickColor is None:
             self._onClickColor = [*[int(x * .8) for x in color[:3]], color[3]] * 6
         else:
-            self._onClickColor = onClickColor
+            self._onClickColor = list(onClickColor) * 6
         size = [width, height]
         if width is None:
             size[0] = 1
@@ -166,16 +166,16 @@ class GuiButton(GuiElement):
     def pressed(self, pos, originalPos):
         self._onClick()
         #Set the color for each vertex to .8 its current value without effecting transparency
-        self._vertList.colors = [*[int(x * .8) for x in self._color[:3]], self._color[3]] * 6
+        self._vertList.colors = self._onClickColor
 
     def setOnClickColor(self, color):
-        self._onClickColor = color
+        self._onClickColor = list(color) * 6
 
     def setColor(self, color):
-        self._color = color
+        self._color = list(color) * 6
 
     def release(self):
-        self._vertList.colors = self._color * 6
+        self._vertList.colors = self._color
 
 class GuiVertexArray(GuiElement):
     '''Draws the given vertex array
