@@ -1,7 +1,6 @@
 import serial
 import serial.tools.list_ports
 import threading
-    
 
 class serialConn():
     serialConns = []
@@ -21,6 +20,7 @@ class serialConn():
         while self.id == "":
             self.id = self.newConn.read()
             if self.id != "":
+                #self.name = self.id
                 print("recived id")
                 print(self.id)
 
