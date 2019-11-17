@@ -1,8 +1,8 @@
-#define ID 2
+#define ID 1
 //#include "arduinoSerialConn.ino"
 
 msgStuff test;
-String message = "this is a test message\n";
+String message = "test1";
 
 void setup() {
   // put your setup code here, to run once:
@@ -12,5 +12,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  test.sendMsg(message);
+  String msg;
+  msg = test.recieveMsg();
+  Serial.print(msg);
 }
