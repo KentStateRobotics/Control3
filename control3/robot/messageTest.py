@@ -1,8 +1,6 @@
-from serialConn import *
-import serial
-import serial.tools.list_ports
-import threading
+from serialConn import msgContainer
+from serialConn import serialConn
 
 testMsg = msgContainer()
-testMsg.__init__
-testMsg.queueMsg("testPy", "6", "1")
+#testMsg.__init__
+testMsg.queueMsg("testPy", "7", "1")

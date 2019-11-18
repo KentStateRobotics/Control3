@@ -17,9 +17,9 @@ private:
 };
 
 void msgStuff::sendId(){
-  Serial.begin(115200);
-  Serial.print(ID);
-  pinMode(13, OUTPUT);
+  //Serial.begin(115200);
+  Serial.println(ID);
+  //pinMode(13, OUTPUT);
 }
 
 String msgStuff::recieveMsg() {
