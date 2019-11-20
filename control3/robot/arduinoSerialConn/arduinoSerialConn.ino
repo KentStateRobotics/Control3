@@ -2,24 +2,23 @@
 #define MSG_MODULE
 
 #define START '|'
-#define ID 1
-
 //#include "dnode.hpp"
 
 class msgStuff{
 public:
-  void sendId();
+  void sendId(int ID);
   void sendMsg(String msg);
   String recieveMsg();
 private:
+  bool sentId = false;
   String msgOut = "";
   String msgIn = "";
 };
 
-void msgStuff::sendId(){
-  //Serial.begin(115200);
+void msgStuff::sendId(int ID){
+  Serial.begin(115200);
+  while(!Serial);
   Serial.println(ID);
-  //pinMode(13, OUTPUT);
 }
 
 String msgStuff::recieveMsg() {
@@ -47,8 +46,11 @@ String msgStuff::recieveMsg() {
 
 void msgStuff::sendMsg(String msg) {
   //String hwCode = "";
-  //switch to select hwCode
-  msg = '/' + msg.length() /*+ hwCode*/+ msg;
-  Serial.print(msg);
+  
+  //need to send lenght speratly from rest
+  //use serial.write()
+  Serial.print('|');
+  Serial.print(msg.length());
+  Serial.print(/*+ hwCode+*/ msg);
 }
 #endif

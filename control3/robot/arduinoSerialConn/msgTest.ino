@@ -1,18 +1,16 @@
-//#define ID 1
+#define ID int(1)
 //#include "arduinoSerialConn.ino"
 
 msgStuff test;
 //String message = "test1";
 
 void setup() {
-  // put your setup code here, to run once:
-  test.sendId();
+  test.sendId(ID);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //test.sendId();
-  String msg;
-  msg = test.recieveMsg();
-  Serial.print(msg);
+  String msg = "|4test";
+  delay(500);
+  test.sendMsg(msg);
 }
