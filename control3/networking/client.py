@@ -25,7 +25,7 @@ class Client(NetworkCore):
         self.messageQueue = []
         if not discoveryId is None:
             self.discoveryId = Message.padString(discoveryId, Message.NAME_LENGTH)
-        self.subcriberRegistrationPub = Publisher(self, self.name, Subscriber.REGISTRATION_TOPIC, Message.MessageType.PUBLISHER.value, messages.SubscriberMsg)
+        self.subcriberRegistrationPub = Publisher(self, Subscriber.REGISTRATION_TOPIC, messages.SubscriberMsg)
         self.clientThread = Client.Thread(self)
         self.clientThread.start()
 
@@ -44,10 +44,11 @@ class Client(NetworkCore):
         asyncio.run_coroutine_threadsafe(self.clientThread.close(), self.clientThread.loop)
         self.clientThread.join()
 
-    def addSubscriber(self, source, topic, messageType, message, callback):
+    def addSubscriber(self, source, topic, message, callback, messageType=Message.MessageType.PUBLISHER.value):
         '''Please use this to create subscribers
+            Refer to the documentaion of Subscriber
         '''
-        sub = Subscriber(source, topic, messageType, message, callback)
+        sub = Subscriber(source, topic, message, callback, messageType=messageType)
         self.subscribers.append(sub)
         msg = sub.getRegisterMsg()
         self.subcriberRegistrationPub.publish(msg)

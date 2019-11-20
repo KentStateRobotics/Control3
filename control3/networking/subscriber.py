@@ -11,19 +11,17 @@ class Subscriber:
     '''The basic class used for receiving data from the network. 
     Subscribes to the feeds of publishers with matching source, topic, and messageType.
 
-    source - Name of the sending network core
-
-    topic - Lable the publisher will be publishing under
-
-    messageType - The Message.MessageType this subscriber is listening for, must be a char
-
-    messageDefinition - The Message object that received messages are defined by
-
-    callback - f(message) - A function to call with the unpacked message when one is received
+    Args:
+        source (str): Name of the sending network core
+        topic (str): Lable the publisher will be publishing under
+        messageDefinition (Message): The Message object that received messages are defined by
+        callback (function(message)) A function to call with the unpacked message when one is received
+    Kwargs:
+        messageType (Message.MessageType, Optional) Type this subscriber is listening for, defaults to PUBLISHER, used mainly for action and service
     '''
     REGISTRATION_TOPIC='subReg'
 
-    def __init__(self, source, topic, messageType, messageDefinition, callback):
+    def __init__(self, source, topic, messageDefinition, callback, messageType=Message.MessageType.PUBLISHER.value):
         if len(topic) > Message.NAME_LENGTH:
             raise ValueError("Topic of subscriber excedied maximum length of {} characters".format(Message.NAME_LENGTH))
         if type(messageType) != bytes:

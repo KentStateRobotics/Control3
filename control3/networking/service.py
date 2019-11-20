@@ -19,8 +19,8 @@ class Service:
         def handleRequest(message):
             self.pub.publish(self.handle(message))
 
-        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.REQUEST.value, argumentMessage, handleRequest)
-        self.pub = Publisher(networkCore, source, topic, Message.MessageType.RESPONSE.value, returnMessage)
+        self.sub = networkCore.addSubscriber(source, topic, argumentMessage, handleRequest, messageType=Message.MessageType.REQUEST.value)
+        self.pub = Publisher(networkCore, topic, returnMessage, messageType=Message.MessageType.RESPONSE.value)
 
     def close(self):
         self.networkCore.removeSubscriber(self.sub)
@@ -32,8 +32,8 @@ class ServiceClient:
     def __init__(self, networkCore, source, topic, argumentMessage, returnMessage, callback):
         self.networkCore = networkCore
         self.argumentMessage = argumentMessage
-        self.sub = networkCore.addSubscriber(source, topic, Message.MessageType.RESPONSE.value, returnMessage, callback)
-        self.pub = Publisher(networkCore, source, topic, Message.MessageType.REQUEST.value, argumentMessage)
+        self.sub = networkCore.addSubscriber(source, topic, returnMessage, callback, messageType=Message.MessageType.RESPONSE.value)
+        self.pub = Publisher(networkCore, topic, argumentMessage, messageType=Message.MessageType.REQUEST.value)
 
     def getArgumentFormat(self):
         return self.argumentMessage.getFormat()
