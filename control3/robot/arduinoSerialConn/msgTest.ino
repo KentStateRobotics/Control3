@@ -2,7 +2,6 @@
 //#include "arduinoSerialConn.ino"
 
 msgStuff test;
-//String message = "test1";
 
 void setup() {
   test.sendId(ID);
@@ -10,7 +9,16 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  String msg = "|4test";
-  delay(500);
-  test.sendMsg(msg);
+  String msgIn = test.recieveMsg();
+  if (msgIn != ""){
+    Serial.print(msgIn);
+    test.sendMsg(msgIn);
+  }
+}
+ 
+void msgStuff::sendMsg(String &msg) {
+  //Serial.print('|');
+  //Serial.print(msg.length());
+  Serial.print("test");
+  Serial.print(msg);
 }

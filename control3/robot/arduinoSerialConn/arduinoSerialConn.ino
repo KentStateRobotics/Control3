@@ -7,7 +7,7 @@
 class msgStuff{
 public:
   void sendId(int ID);
-  void sendMsg(String msg);
+  void sendMsg(String &msg);
   String recieveMsg();
 private:
   bool sentId = false;
@@ -22,35 +22,25 @@ void msgStuff::sendId(int ID){
 }
 
 String msgStuff::recieveMsg() {
-  char msgIn;           //messages recieved from USB
   int msgLength;        //lngth of message
   String msg = "";      //message with corrected start
-  int charNum;          //length of message
-  int i;                //iterable
 
-  while (true){
-    msgIn = Serial.read();
-    if (msgIn == START){
-      msg += msgIn;
-      msgLength = Serial.read();
-      int i = 0;
-      while (i <= msgLength) {
-        msg += Serial.read();
-        ++i;
-      }
-      break;
+  String t = Serial.readString();
+  if (t[0] == START){
+    msgLength = int(t[1]);
+    for (int i = 0; i < msgLength; ++i){
+      msg += t[2+i];
     }
+    return msg;
+  } else{
+    return "";
   }
-  return msg;
 }
-
+/*
 void msgStuff::sendMsg(String msg) {
-  //String hwCode = "";
-  
-  //need to send lenght speratly from rest
-  //use serial.write()
-  Serial.print('|');
-  Serial.print(msg.length());
-  Serial.print(/*+ hwCode+*/ msg);
+  //Serial.print('|');
+  //Serial.print(msg.length());
+  Serial.print(msg);
 }
+*/
 #endif
