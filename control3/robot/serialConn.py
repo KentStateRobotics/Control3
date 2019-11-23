@@ -6,7 +6,7 @@ class serialConn():
     serialConns = []
     msgToSend = []
     readyToSend = False
-    START = b'|'
+    START = '|'
 
     def __init__(self, ports):
         self.id = ""
@@ -21,30 +21,32 @@ class serialConn():
     def findId(self):
         print("id pre:")
         while self.id == "":
-            self.id = int(self.newConn.read())
+            self.id = self.newConn.read()
             if self.id != "":
                 print("recived id: ", self.id)
-                serialConn.readyToSend = True
                 self.thread = threading.Thread(target = self.recieveMsg)
                 self.thread.start()
+                serialConn.readyToSend = True
 
     def sendMsg(self, data):
         self.newConn.write(data.encode())
+    def sendMsgInt(self, data):
+        self.newConn.write(data)
 
     def recieveMsg(self):
         print("ready to receive")
         while True:
             self.fullMsg = ""
-            self.msgIn = self.newConn.readline()
+            self.msgIn = self.newConn.read()
             print(self.msgIn)
-            if self.msgIn == self.START:
+            if self.msgIn == self.START.encode():
                 self.length = int(self.newConn.read())
                 i = 0
                 while i < self.length:
                     self.fullMsg += self.newConn.read().decode('utf-8')
                     i += 1
                 print("received: ", self.fullMsg)
-                break
+                
 
 
 class msgContainer():
@@ -57,15 +59,15 @@ class msgContainer():
         if not self.connected:
             print("No ardunios connected")
 
-    def queueMsg(self, message, length, dest):
+    def queueMsg(self, message, dest):
         if not self.connected:
             return
         else:
             while not serialConn.readyToSend:
                 pass
-            data = serialConn.START.decode('utf-8') + length + message
-            print("finished message: " + data)
             for p in serialConn.serialConns:
                 if p.getId() == dest:
-                    print("that message: " + data + ", should have been sent")
-                    p.sendMsg(data)
+                    p.sendMsg(serialConn.START)
+                    p.sendMsgInt(len(message))
+                    p.sendMsg(message)
+                    print("should have sent:", serialConn.START, len(message), message)

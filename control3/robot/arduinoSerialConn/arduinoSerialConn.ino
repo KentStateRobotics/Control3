@@ -7,7 +7,7 @@
 class msgStuff{
 public:
   void sendId(int ID);
-  void sendMsg(String &msg);
+  void sendMsg(String msg);
   String recieveMsg();
 private:
   bool sentId = false;
@@ -25,12 +25,17 @@ String msgStuff::recieveMsg() {
   int msgLength;        //lngth of message
   String msg = "";      //message with corrected start
 
-  String t = Serial.readString();
-  if (t[0] == START){
-    msgLength = int(t[1]);
-    for (int i = 0; i < msgLength; ++i){
-      msg += t[2+i];
-    }
+  char t = Serial.read();
+  if (t == START){
+    msgLength = Serial.parseInt()-1;
+    msg = Serial.readString();
+    //Serial.print(msgLength);
+    //for (int i = 0; i < msgLength; ++i){
+    //  t = Serial.read();
+    //  Serial.print(' ');
+    //  Serial.print(t);
+    //  msg += t;
+    //}
     return msg;
   } else{
     return "";

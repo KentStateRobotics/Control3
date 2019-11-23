@@ -11,14 +11,13 @@ void loop() {
   // put your main code here, to run repeatedly:
   String msgIn = test.recieveMsg();
   if (msgIn != ""){
-    Serial.print(msgIn);
     test.sendMsg(msgIn);
   }
+  test.sendMsg("test");
 }
  
-void msgStuff::sendMsg(String &msg) {
-  //Serial.print('|');
-  //Serial.print(msg.length());
-  Serial.print("test");
+void msgStuff::sendMsg(String msg) {
+  Serial.print('|');
+  Serial.print(msg.length());
   Serial.print(msg);
 }

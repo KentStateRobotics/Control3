@@ -2,4 +2,4 @@ from serialConn import msgContainer
 from serialConn import serialConn
 
 testMsg = msgContainer()
-testMsg.queueMsg("testPy", "6", 1)
+testMsg.queueMsg("testPy", 1)
