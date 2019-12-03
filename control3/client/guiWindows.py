@@ -41,7 +41,11 @@ class ControlWindow(pyglet.window.Window):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
     def addElement(self, element):
-        self.elements.append(element)
+        if type(element) == list:
+            for elm in element:
+                self.elements.append(elm)
+        else:
+            self.elements.append(element)
 
     def removeElement(self, element):
         self.elements.remove(element)
@@ -81,3 +85,28 @@ class GuiTestMenu(ControlWindow):
 
         self.addElement(guiElements.GuiImage("control3/debugScripts/testTexture.jpg", 0, 0, width=.1, maintainAspectRatio=1, relativity=(False, False, True, False)))
 
+class GuiDashboard(ControlWindow):
+    def __init__(self):
+        super().__init__()
+        tPanel = guiElements.GuiButton(0,0.9,1,0.9,color=(0,0,55,255),relativity=(True,True,True,True))
+        bPanel = guiElements.GuiButton(0,0,1,0.25,color=(0,0,55,255),relativity=(True,True,True,True))
+        mPanel = guiElements.GuiButton(0.15,0.25,0.85,0.65,color=(200,200,200,255),relativity=(True,True,True,True))
+        lPanel = guiElements.GuiButton(0,0.25,0.15,0.65,color=(0,0,55,255),relativity=(True,True,True,True))
+        rPanel = guiElements.GuiButton(0.85,0.25,0.15,0.65,color=(0,0,55,255),relativity=(True,True,True,True))
+        
+
+        pPanels = [tPanel,bPanel,mPanel,lPanel,rPanel] #list of the five main parent panels t-top b-bottom m-middle l-left r-right
+        tChildren = [
+            guiElements.GuiButton(tPanel.size()[0]+20, tPanel.size()[1]+20, tPanel.size()[0]-20, tPanel.size()[1]-20, color=(100,100,0,255),relativity=(False,False,False,False))
+        ]
+        bChildren = []
+        mChildren = []
+        lChildren = []
+        rChildren = []
+
+        self.addElement(pPanels)
+        tPanel.addElement(tChildren)
+        #bPanel.addElement(bChildren)
+        #mPanel.addElement(mChildren)
+        #lPanel.addElement(lChildren)
+        #rPanel.addElement(rChildren)

@@ -48,7 +48,11 @@ class GuiElement:
         self._onClick = onClick
 
     def addElement(self, element):
-        self._children.append(element)
+        if type(element) == list:
+            for elm in element:
+                self._children.append(elm)
+        else:
+            self._children.append(element)
 
     def removeElement(self, element):
         self._children.remove(element)

@@ -2,7 +2,7 @@ import argparse
 import networking
 import networking.message
 import pyglet
-from pyglet.gl import gl
+#from pyglet.gl import gl
 import client.guiWindows as guiWindows
 
 def main():
