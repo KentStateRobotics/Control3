@@ -21,16 +21,11 @@ class TestSubscriber(unittest.TestCase):
     
     def test_topicException(self):
         def defineBadSubscriber():
-            Subscriber(source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.PUBLISHER.value, testMsg, None)
+            Subscriber(source, 'a' * Message.NAME_LENGTH * 2, testMsg, None)
         self.assertRaises(ValueError, defineBadSubscriber)
 
-    def test_messageTypeException(self):
-        def defineBadSubscriber():
-            Subscriber(source, topic, Message.MessageType.PUBLISHER, testMsg, None)
-        self.assertRaises(TypeError, defineBadSubscriber)
-
     def test_register(self):
-        sub = Subscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = Subscriber(source, topic, testMsg, None)
         correctRegisterMessage = messages.SubscriberMsg.getFormat()
         correctRegisterMessage['source'] = source
         correctRegisterMessage['topic'] = topic
@@ -39,7 +34,7 @@ class TestSubscriber(unittest.TestCase):
         self.assertEqual(sub.getRegisterMsg(), correctRegisterMessage)
     
     def test_topicMatchAll(self):
-        sub = Subscriber('', topic, Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = Subscriber('', topic, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
@@ -49,7 +44,7 @@ class TestSubscriber(unittest.TestCase):
         self.assertTrue(sub.topicMatch(header))
 
     def test_topicMatchFalse(self):
-        sub = Subscriber('notClient', topic, Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = Subscriber('notClient', topic, testMsg, None)
         header = Message.Header.getFormat()
         header['source'] = source
         header['topic'] = topic
@@ -74,7 +69,7 @@ class TestSubscriber(unittest.TestCase):
 
     def test_received(self):
         f = mock.Mock()
-        sub = Subscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, f)
+        sub = Subscriber(source, topic, testMsg, f)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         msg['header']['source'] = source
@@ -87,21 +82,17 @@ class TestSubscriber(unittest.TestCase):
 
 
 class TestPublisher(unittest.TestCase):
-    
-    def test_topicException(self):
-        def defineBadPublisher():
-            networking.Publisher(None, source, 'a' * Message.NAME_LENGTH * 2, Message.MessageType.PUBLISHER.value, testMsg)
-        self.assertRaises(ValueError, defineBadPublisher)
 
     def test_messageTypeException(self):
         def defineBadPublisher():
-            networking.Publisher(None, source, topic, Message.MessageType.PUBLISHER, testMsg)
+            networking.Publisher(None, source, topic, testMsg)
         self.assertRaises(TypeError, defineBadPublisher)
 
     @mock.patch('time.time', return_value=10)
     def test_publish(self, timePatch):
         core = mock.MagicMock()
-        sub = networking.Publisher(core, source, topic, Message.MessageType.PUBLISHER.value, testMsg)
+        core.name = b'source'
+        sub = networking.Publisher(core, topic, testMsg)
         msg = testMsg.getFormat()
         msg['int'] = 456486
         sub.publish(msg)
@@ -140,7 +131,7 @@ class TestServer(unittest.TestCase):
     @mock.patch('networking.Server.Thread')
     def test_addSubscriber(self, serverThread):
         server = networking.Server("server", 4242)
-        sub = server.addSubscriber("source", "topic", Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = server.addSubscriber("source", "topic", testMsg, None)
         self.assertTrue(sub in server.subscribers)
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = Message.padString("source", Message.NAME_LENGTH)
@@ -198,7 +189,7 @@ class TestClient(unittest.TestCase):
     @mock.patch('networking.Client.send')
     def test_addSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
-        sub = client.addSubscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = client.addSubscriber(source, topic, testMsg, None)
         self.assertTrue(sub in client.subscribers)
         msg = messages.SubscriberMsg.getFormat()
         msg['source'] = source
@@ -217,7 +208,7 @@ class TestClient(unittest.TestCase):
     @mock.patch('networking.Client.send')
     def test_rmoveSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
-        sub = client.addSubscriber(source, topic, Message.MessageType.PUBLISHER.value, testMsg, None)
+        sub = client.addSubscriber(source, topic, testMsg, None)
         client.removeSubscriber(sub)
         self.assertFalse(sub in client.subscribers)
         msg = messages.SubscriberMsg.getFormat()
@@ -281,6 +272,7 @@ class TestService(unittest.TestCase):
     @mock.patch('time.time', return_value=1)
     def test_response(self, time):
         networkCore = mock.MagicMock()
+        networkCore.name = source
         networkCore.addSubscriber.side_effect = Subscriber
         def testMsgIncrement(msg):
             msg['blob'] = "A" + str(msg['int'] + 1)
@@ -304,6 +296,7 @@ class TestService(unittest.TestCase):
     def test_requestSend(self, timeSpoof):
         networkCore = mock.MagicMock()
         networkCore.addSubscriber.side_effect = Subscriber
+        networkCore.name = source
         callback = mock.MagicMock()
         testProxyService = service.ServiceClient(networkCore, source, topic, testMsg, testMsg, callback)
         msg = testMsg.getFormat()
@@ -320,6 +313,7 @@ class TestService(unittest.TestCase):
     def test_requestCallback(self, timeSpoof):
         networkCore = mock.MagicMock()
         networkCore.addSubscriber.side_effect = Subscriber
+        networkCore.name = source
         callback = mock.MagicMock()
         testProxyService = service.ServiceClient(networkCore, source, topic, testMsg, testMsg, callback)
         def changeMsgTypeAndSend(header, msg):

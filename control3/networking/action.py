@@ -22,11 +22,11 @@ class Action:
         self.commandMessge = commandMessge
         self.statusMessage = statusMessage
         self.resultMessage = resultMessage
-        self.commandSub = networkCore.addSubscriber(source, topic, Message.MessageType.REQUEST.value, commandMessge, onCommand)
+        self.commandSub = networkCore.addSubscriber(source, topic, commandMessge, onCommand, messageType=Message.MessageType.REQUEST.value)
         if not statusMessage is None:
-            self.statusPub = Publisher(networkCore, source, topic, Message.MessageType.STATUS.value, statusMessage)
+            self.statusPub = Publisher(networkCore, topic, statusMessage, messageType=Message.MessageType.STATUS.value)
         if not resultMessage is None:
-            self.resultPub = Publisher(networkCore, source, topic, Message.MessageType.RESULT.value, statusMessage)
+            self.resultPub = Publisher(networkCore, topic, statusMessage, messageType=Message.MessageType.RESULT.value)
 
     def getStatusFormat():
         if self.statusMessage is None:
@@ -70,9 +70,9 @@ class ActionClient:
         self.commandMessge = commandMessge
         self.statusMessage = statusMessage
         self.resultMessage = resultMessage
-        self.commandPub = Publisher(networkCore, source, topic, Message.MessageType.REQUEST.value, commandMessge)
-        self.statusSub = networkCore.addSubscriber(source, topic, Message.MessageType.STATUS.value, statusMessage, onStatus)
-        self.resultSub = networkCore.addSubscriber(source, topic, Message.MessageType.RESULT.value, resultMessage, onResult)
+        self.commandPub = Publisher(networkCore, topic, commandMessge, messageType=Message.MessageType.REQUEST.value)
+        self.statusSub = networkCore.addSubscriber(source, topic, statusMessage, onStatus, messageType=Message.MessageType.STATUS.value)
+        self.resultSub = networkCore.addSubscriber(source, topic, resultMessage, onResult, messageType=Message.MessageType.RESULT.value)
     
     def getCommandFormat():
         return self.commandMessge.getFormat()

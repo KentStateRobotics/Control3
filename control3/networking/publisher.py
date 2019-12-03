@@ -10,27 +10,20 @@ class Publisher:
     '''The basic class used for sending data on the network. 
     Publishes a feed under the source, topic, and messageType.
 
-    networkCore - The network core to used to send
-
-    source - Name of the sending network core, NONE to use local name
-
-    topic - Lable the publisher will be publishing under
-
-    messageType - The Message.MessageType this subscriber is listening for
-
-    messageDefinition - The Message object that received messages are defined by
+    Args:
+        networkCore (NetworkCore): The network core to used to send
+        topic (str): Lable the publisher will be publishing under
+        messageDefinition (Message) The Message object that received messages are defined by
+    Kwargs:
+        messageType (Message.MessageType, Optional) The type of this message, used mainly for services and actions
     '''
-    def __init__(self, networkCore, source, topic, messageType, messageDefinition):
+    def __init__(self, networkCore, topic, messageDefinition, messageType=Message.MessageType.PUBLISHER.value):
         if len(topic) > Message.NAME_LENGTH:
             raise ValueError("Topic of publisher exceaded maximum length of {} characters".format(Message.NAME_LENGTH))
         if type(messageType) != bytes:
             raise TypeError("messageType must be a VALUE of the enum Message.MessageType. Ex: Message.MessageType.PUBLISHER.value")
         self.networkCore = networkCore
         self.messageType = messageType
-        if source is None:
-            self.source = networkCore.name
-        else:
-            self.source = Message.padString(source, Message.NAME_LENGTH)
         self.topic = Message.padString(topic, Message.NAME_LENGTH)
         self.messageDefinition = messageDefinition
         self.sequence = 0
@@ -40,7 +33,7 @@ class Publisher:
 
             message - dict whos format is determined by this publishers Message definiton
         '''
-        message['header']['source'] = self.source
+        message['header']['source'] = self.networkCore.name
         message['header']['topic'] = self.topic
         message['header']['timestamp'] = time.time()
         message['header']['sequence'] = self.sequence

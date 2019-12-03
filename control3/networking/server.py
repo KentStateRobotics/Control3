@@ -20,7 +20,7 @@ class Server(NetworkCore):
         super().__init__(name, port, discoveryPort)
         self.clients = []
         self.alive = True
-        self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, Message.MessageType.PUBLISHER.value, messages.SubscriberMsg, self._recSubRegister)
+        self.subcriberRegistrationSub = self.addSubscriber('', Subscriber.REGISTRATION_TOPIC, messages.SubscriberMsg, self._recSubRegister)
         self.serverThread = Server.Thread(self)
         self.serverThread.start()
 
@@ -43,10 +43,11 @@ class Server(NetworkCore):
             asyncio.run_coroutine_threadsafe(self.serverThread.close(), self.serverThread.loop)
         self.serverThread.join()
 
-    def addSubscriber(self, source, topic, messageType, message, callback):
+    def addSubscriber(self, source, topic, message, callback, messageType=Message.MessageType.PUBLISHER.value):
         '''Please use this to create subscribers
+        Refer to the documentaion of Subscriber
         '''
-        sub = Subscriber(source, topic, messageType, message, callback)
+        sub = Subscriber(source, topic, message, callback, messageType=messageType)
         self.subscribers.append(sub)
         return sub
 

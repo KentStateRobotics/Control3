@@ -37,8 +37,9 @@ class NetworkCore:
         '''
         pass
 
-    def addSubscriber(self, source, topic, messageType, message, callback):
+    def addSubscriber(self, source, topic, message, callback, messageType=Message.MessageType.PUBLISHER):
         '''Creates and returns a new subscriber, defined in child class
+        Refer to the documentaion of Subscriber
         '''
         pass
 
