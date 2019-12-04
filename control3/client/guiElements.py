@@ -133,6 +133,9 @@ class GuiElement:
     def release(self):
         pass
 
+    def size(self):
+        return self._size
+
 class GuiButton(GuiElement):
     '''A rectangular gui element that can drawn and clicked on. Will shade when pressed
         Args:
@@ -149,11 +152,11 @@ class GuiButton(GuiElement):
             onClickColor ((int, int, int, int) : optional) - color to change to when clicked, by default a darker version of the normal color
             onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None, onClickColor=None):
+    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), border=(0,0,0,0), color=(255,255,255,255), bcolor=(255,255,255,255), onClick=None, onClickColor=None):
         batch = pyglet.graphics.Batch()
         self._color = list(color) * 6
         if onClickColor is None:
-            self._onClickColor = [*[int(x * .8) for x in color[:3]], color[3]] * 6
+            self._onClickColor = [*[int(x * .8) for x in bcolor[:3]], bcolor[3]] * 6
         else:
             self._onClickColor = list(onClickColor) * 6
         size = [width, height]
@@ -162,7 +165,14 @@ class GuiButton(GuiElement):
         elif height is None:
             size[1] = 1
         self._vertList = batch.add(6, gl.GL_TRIANGLES, None,
-            ('v2f', (0, 0, size[0], 0, 0, size[1], 0, size[1], size[0], 0, size[0], size[1])),
+            ('v2f', (0, 0, size[0], 0, 0, size[1],
+                     0, size[1], size[0], 0, size[0], size[1]),
+            ('c4B', (bcolor * 6))
+        )
+        self._innerBatch = pyglet.graphics.Batch()
+        self._innerBatchList = batch.add(6, gl.GL_TRIANGLES, None,
+            ('v2f', (border[0], border[3], size[0]-border[2], border[3],size[0]-border[2], size[1]-border[3],
+                     border[0], border[1], size[0]-border[2], size[1]-border[1], border[0], size[1]-border[1])),
             ('c4B', (color * 6))
         )
         super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
@@ -180,6 +190,23 @@ class GuiButton(GuiElement):
 
     def release(self):
         self._vertList.colors = self._color
+
+    def draw(self, parentSize):
+        if not self._hidden:
+            self._size, scale = self.calculateSize(parentSize)
+            self._pos = list(self._defaultPos)
+            if self._relativity[0]:
+                self._pos[0] *= parentSize[0]
+            if self._relativity[1]:
+                self._pos[1] *= parentSize[1]
+            gl.glPushMatrix()
+            gl.glTranslatef(self._pos[0], self._pos[1], 0)
+            gl.glPushMatrix()
+            gl.glScalef(scale[0], scale[1], 1)
+            self._innerBatchList.draw()
+            gl.glPopMatrix()
+            super().draw(parentSize)
+
 
 class GuiVertexArray(GuiElement):
     '''Draws the given vertex array
@@ -208,7 +235,22 @@ class GuiVertexArray(GuiElement):
     def __init__(self, vertexs, colors, x, y, indices=None, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None):
         self.setVertexes(vertexs, colors, indices)
         super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
-
+        batch = pyglet.graphics.Batch()
+        self._color = list(color) * 6
+        if onClickColor is None:
+            self._onClickColor = [*[int(x * .8) for x in color[:3]], color[3]] * 6
+        else:
+            self._onClickColor = list(onClickColor) * 6
+        size = [width, height]
+        if width is None:
+            size[0] = 1
+        elif height is None:
+            size[1] = 1
+        self._vertList = batch.add(6, gl.GL_TRIANGLES, None,
+            ('v2f', (0, 0, size[0], 0, 0, size[1], 0, size[1], size[0], 0, size[0], size[1])),
+            ('c4B', (color * 6))
+        )
+        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
     def setVertexes(self, vertexs, colors, indices=None):
         '''See __init__
         '''
