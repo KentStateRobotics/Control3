@@ -64,6 +64,7 @@ ext_modules=[
 More details on c extensions:
 https://docs.python.org/3/extending/extending.html
 https://docs.python.org/3/extending/building.html
+http://www.speedupcode.com/c-class-in-python3/
 
 More details on Cython:
 https://cython.readthedocs.io/en/latest/index.html
