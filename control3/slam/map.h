@@ -28,6 +28,9 @@ private:
     public:
         Block(){};
         Block(const Map* map, int16_t offsetX, int16_t offsetY);
+        //Block(const Block& other);
+        Block(Block&& other);
+        //Block& operator=(const Block& other);
         ~Block();
         std::pair<double, uint8_t> getElement(int x, int y) const;
         void setElement(int x, int y, double height, uint8_t confidence);
@@ -44,7 +47,7 @@ public:
      * @param percision The increment in mm to store the height data as
      */
     Map(uint16_t blockSize=256, uint8_t unitSize = 10, uint8_t precision = 5);
-    ~Map(){};
+    ~Map();
 
     /**
      * Obtain the indivisual voxel described by the coordinates (in indice or meteres)
@@ -92,7 +95,7 @@ public:
      * @param rY Absolute y axis rotation of camera in radians
      * @param rZ Absolute z axis rotation of camera in radians
      */
-    void applyDepthImage(const uint16_t* image, int height, int width, double hFov, double vFov, double x, double y, double z, double rX, double rY, double rZ);
+    void applyDepthImage(const uint16_t* image, float scale, int height, int width, double hFov, double vFov, double x, double y, double z, double rX, double rY, double rZ);
 
     /**
      * Get a list of vertxies representing the map, can be given to opengl in point mode
@@ -104,15 +107,20 @@ public:
      */
     void clear();
 private:
-    Block& getOrInsertBlock(int16_t x, int16_t y);
-    std::pair<bool, const Block&> getBlock(int16_t x, int16_t y) const;
+    Block* getOrInsertBlock(int16_t x, int16_t y);
+    std::pair<bool, const Block*> getBlock(int16_t x, int16_t y) const;
+
+    class BlockKeyHash{
+    public:
+        size_t operator()(const std::pair<int16_t, int16_t> value) const{
+            int32_t cvt = value.first;
+            cvt = (cvt << 16) | value.second;
+            return std::hash<int32_t>()(cvt);
+        }
+    };
 
     uint16_t _blockSize;
     uint8_t _unitSize;
     uint8_t _precision;
-    std::unordered_map<std::pair<int16_t, int16_t>, Block, [](std::pair<int16_t, int16_t> value) -> {
-        int32_t cvt = value.first;
-        cvt = (cvt << 16) | value.second;
-        return std::hash<int32_t>(cvt);
-    }> _blocks;
+    std::unordered_map<std::pair<int16_t, int16_t>, Block*, BlockKeyHash> _blocks;
 };
