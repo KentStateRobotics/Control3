@@ -7,9 +7,19 @@ static PyObject *depthToGray(PyObject *self, PyObject *args){
     if (!PyArg_ParseTuple(args, "s*", &a)) {
       return NULL;
     }
-    for(int i = 0; i < (a.len / 2); ++i){
+    /*for(int i = 0; i < (a.len / 2); ++i){
         unsigned short value = static_cast<unsigned short*>(a.buf)[i];
         static_cast<unsigned short*>(a.buf)[i] = std::min(255, unsigned short(value / 256) + 100);
+    }*/
+    for(int i = 0; i < 720; ++i){
+        for(int j = 0; j < 1280; ++j){
+            unsigned short value = static_cast<unsigned short*>(a.buf)[i * 1280 + j];
+            if(j < 400){
+                static_cast<unsigned short*>(a.buf)[i * 1280 + j] = 0;
+            }else{
+                static_cast<unsigned short*>(a.buf)[i * 1280 + j] = std::min(255, unsigned short(value / 256) + 100);
+            }
+        }
     }
     PyBuffer_Release(&a);
     return Py_None;

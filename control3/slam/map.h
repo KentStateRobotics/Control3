@@ -10,6 +10,8 @@
 #include<unordered_map>
 #include<array>
 
+# define M_PI 3.14159265358979323846
+
 /**
  * Store a 2d voxel height map.
  * Will automaticly dynamicly expand using linked blocks
@@ -67,7 +69,39 @@ public:
      */
     double heightUnitsToMeters(int16_t value) const;
     int16_t metersToHeightUnits(double distance) const;
-    
+
+    /**
+     * Provide evidence that this location is at least this tall, found from the endpoints of the vectors
+     */
+    void applyMinHeightIndice(int x, int y, double height);
+    /**
+     * Provide evidence that this location is less tall than this, found by vectors that pass though this location
+     */
+    void applyMaxHeightIndice(int x, int y, double height);
+    /**
+     * Apply the data from a depth camera to update the map
+     * @param image A height x width array of depth data
+     * @param height Pixle height of image
+     * @param width Pixle width of image
+     * @param hFov Horizontal field of view in radians
+     * @param vFov Vertical field of view in radians
+     * @param x Absolute x position of camera relitive to the map
+     * @param y Absolute y position of camera relitive to the map
+     * @param z Absolute z position of camera relitive to the map
+     * @param rX Absolute x axis rotation of camera in radians
+     * @param rY Absolute y axis rotation of camera in radians
+     * @param rZ Absolute z axis rotation of camera in radians
+     */
+    void applyDepthImage(const uint16_t* image, int height, int width, double hFov, double vFov, double x, double y, double z, double rX, double rY, double rZ);
+
+    /**
+     * Get a list of vertxies representing the map, can be given to opengl in point mode
+     */
+    std::pair<int, float*> getPoints();
+
+    /**
+     * Resets the map data, config stays the same
+     */
     void clear();
 private:
     Block& getOrInsertBlock(int16_t x, int16_t y);
@@ -76,5 +110,9 @@ private:
     uint16_t _blockSize;
     uint8_t _unitSize;
     uint8_t _precision;
-    std::unordered_map<std::pair<int16_t, int16_t>, Block> _blocks;
+    std::unordered_map<std::pair<int16_t, int16_t>, Block, [](std::pair<int16_t, int16_t> value){
+        int32_t cvt = value.first;
+        cvt = (cvt << 16) | value.second;
+        return std::hash<int32_t>(cvt);
+    }> _blocks;
 };

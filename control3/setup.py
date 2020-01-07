@@ -22,6 +22,7 @@ setup(
     ext_modules=[
     #    Extension("debugScripts.cythonExtentionTest", ["debugScripts/cythonExtentionTest.pyx"]),
     #    Extension("debugScripts.cExtentionTest", sources = ["debugScripts/cExtentionTest.cpp"])
-        Extension("slam.processing", sources = ["slam/processing.cpp"])
+        Extension("slam.processing", sources = ["slam/processing.cpp"]),
+        Extension("slam.map", sources = ["slam/map.cpp", "slam/map2py.cpp"])
     ]
 )
