@@ -110,7 +110,7 @@ private:
     uint16_t _blockSize;
     uint8_t _unitSize;
     uint8_t _precision;
-    std::unordered_map<std::pair<int16_t, int16_t>, Block, [](std::pair<int16_t, int16_t> value){
+    std::unordered_map<std::pair<int16_t, int16_t>, Block, [](std::pair<int16_t, int16_t> value) -> {
         int32_t cvt = value.first;
         cvt = (cvt << 16) | value.second;
         return std::hash<int32_t>(cvt);
