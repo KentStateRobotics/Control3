@@ -166,7 +166,7 @@ void Map::applyDepthImage(const uint16_t* image, float scale, int height, int wi
             if(rawDistance > 10 && rawDistance < std::pow(2, 16) - 10){
                 double distance = rawDistance * scale;
                 double azimuth = hPerPixle * (j - width / 2) + rY;
-                double inclination = M_PI / 2 * (vPerPixle * (i - height / 2) + rX);
+                double inclination = M_PI / 2 - (vPerPixle * (i - height / 2) + rX);
                 double fX = distance * std::sin(inclination) * std::cos(azimuth);
                 double fZ = distance * std::sin(inclination) * std::sin(azimuth);
                 double fY = distance * std::cos(inclination);

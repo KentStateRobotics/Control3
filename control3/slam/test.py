@@ -33,7 +33,6 @@ def displayImg():
     finally:
         pipe.stop()
 
-#displayImg()
 
 def main():
     pipe = rs.pipeline()
@@ -52,30 +51,28 @@ def main():
     try:
         window = pyglet.window.Window(resizable=True)
         #window.set_exclusive_mouse(True)
-        '''colors = [255,255,255, 128,0,0, 0,0,128]
+        colors = [255,0,0, 255,0,0, 255,0,0, 255,0,0, 255,0,0, 255,0,0, 255,0,0, 255,0,0, 255,0,0,  255,0,0, 255,0,0, 255,0,0]
         color_gl_array = (gl.GLubyte * len(colors))(*colors)
-
-        gl.glEnableClientState(gl.GL_COLOR_ARRAY )
-        gl.glColorPointer(3, gl.GL_UNSIGNED_BYTE, 0, color_gl_array)
-        
-
         vertices = [0, 0, 0,
                 1, 0, 0,
-                1, 1, 0]
+                0, 1, 0,
+                1, 0, 0,
+                0, 1, 0,
+                1, 1, 0,
+                0, 0, 0,
+                0, 1, 0,
+                0, 0, -1,
+                1, 0, 0,
+                1, 1, 0,
+                1, 0, -1]
         vertices_gl_array = (gl.GLfloat * len(vertices))(*vertices)
-
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices_gl_array)
-
-        indice = [0,1,2]
-        indice_gl_array = (gl.GLubyte * len(indice))(*indice)'''
 
         points = None
         verts = None
         gl.glDisable(gl.GL_CULL_FACE)
 
         azimuth = 0
-        inclination = 0
+        inclination = math.pi
         camDistance = 5
 
         @window.event
@@ -84,7 +81,7 @@ def main():
                 nonlocal azimuth, inclination, camDistance
                 gl.glMatrixMode(gl.GL_MODELVIEW)
                 azimuth += dx * .005
-                inclination = max(.001, min(math.pi - .001, azimuth + dy * .005))
+                inclination = max(.001, min(math.pi - .001, inclination + dy * .005))
                 camPos = [0,0,0]
                 camPos[0] = camDistance * math.sin(inclination) * math.cos(azimuth)
                 camPos[1] = camDistance * math.cos(inclination)
@@ -96,7 +93,7 @@ def main():
         @window.event
         def on_mouse_scroll(x, y, scrollX, scrollY):
             nonlocal camDistance
-            camDistance += scrollY * .2
+            camDistance = max(.1, camDistance + scrollY * .2)
             on_mouse_drag(0,0,0,0,mouse.LEFT, None)
 
         @window.event
@@ -110,16 +107,30 @@ def main():
 
         @window.event
         def on_draw():
-            nonlocal verts
+            nonlocal verts, vertices, vertices_gl_array, color_gl_array
             gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
             gl.glMatrixMode(gl.GL_MODELVIEW)
             gl.glPushMatrix()
+            gl.glRotatef(-90, 0, 0, 1);
+            gl.glPushMatrix()
             #gl.glRotatef(temp * 60, 1, 0, 1)
-            #gl.glDrawArrays(gl.GL_POINTS, 0, len(vertices) // 3)
-            gl.glRotatef(math.pi / 2, 0, 1, 0)
+            
             if not verts is None:
+                gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+                gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ctypes.data)
                 gl.glDrawArrays(gl.GL_POINTS, 0, len(verts) // 3)
-
+                gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glPopMatrix()
+            gl.glPushMatrix()
+            gl.glScalef(.1, .1, .1)
+            gl.glEnableClientState(gl.GL_COLOR_ARRAY)
+            gl.glColorPointer(3, gl.GL_UNSIGNED_BYTE, 0, color_gl_array)
+            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glVertexPointer(3, gl.GL_FLOAT, 0, vertices_gl_array)
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, len(vertices) // 3)
+            gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+            gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glPopMatrix()
             gl.glPopMatrix()
 
         def update(delta):
@@ -127,14 +138,14 @@ def main():
             print("pre frames")
             frames = pipe.wait_for_frames()
             depth = frames.get_depth_frame()
-            depthArray = np.asarray(depth.get_data(), dtype=np.uint16)
+            decFilter = rs.decimation_filter()
+            newDepth = decFilter.process(depth)
+            depthArray = np.asarray(newDepth.get_data(), dtype=np.uint16)
             cMap.applyDepthImage(depthMap, depthArray, depthScale, depthArray.shape[0], depthArray.shape[1], 1.5184, 1.0123, 0, .12, 0, 0, 0, 0)
             points = cMap.getPoints(depthMap)
-            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
             print(len(points[1]))
             print(points[0])
             verts = np.frombuffer(points[1], dtype=np.float32)
-            gl.glVertexPointer(3, gl.GL_FLOAT, 0, verts.ctypes.data)
             on_draw()
             
             
