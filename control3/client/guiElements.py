@@ -29,9 +29,11 @@ class GuiElement:
         relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
             False - absolute pixles
             True - relitive ratio
+        border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+        borderColor ((int, int, int, int) : optional) - color of border, defaults to black
         onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     """
-    def __init__(self, drawable, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), onClick=None):
+    def __init__(self, drawable, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), border=(0, 0, 0, 0), borderColor=(0,0,0,255), onClick=None):
         if (width is None or height is None) and maintainAspectRatio is None:
             raise TypeError("width and height must be set is maintainAspectRatio is not")
         elif width is None and height is None:
@@ -45,7 +47,20 @@ class GuiElement:
         self._maintainAspectRatio = maintainAspectRatio
         self._relativity = relativity
         self._drawable = drawable
+        borderSize = [width, height]
+        if width is None:
+            borderSize[0] = 1
+        elif height is None:
+            borderSize[1] = 1
+        self._border = border
+        self._borderColor = borderColor
+        self._borderDrawable = pyglet.graphics.Batch()
+        self._borderVerts = self._borderDrawable.add(6, gl.GL_TRIANGLES, None,
+            ('v2f', (0, 0, borderSize[0], 0, 0, borderSize[1], 0, borderSize[1], borderSize[0], 0, borderSize[0], borderSize[1])),
+            ('c4B', (borderColor * 6))
+        )
         self._onClick = onClick
+
 
     def addElement(self, element):
         self._children.append(element)
@@ -72,34 +87,52 @@ class GuiElement:
         self._defaultSize = (width, height)
 
     def calculateSize(self, parentSize):
+        #Size could be in pixles or multiplyer
         size = list(self._defaultSize)
+        #If size for axis and scaleing is defined then derive size from parent
+        #Size will from here on be in pixles, applies multipliers to parent's pixle size
         if (not size[0] is None) and self._relativity[2]:
             size[0] *= parentSize[0]
         if (not size[1] is None) and self._relativity[3]:
             size[1] *= parentSize[1]
+        #If static aspect ratio find other size length
         if self._maintainAspectRatio:
             if self._defaultSize[0] is None:
                 size[0] = self._maintainAspectRatio * size[1]
             else:
                 size[1] = self._maintainAspectRatio * size[0]
-        scale = (size[0] / (1 if self._defaultSize[0] is None else self._defaultSize[0]),
+        #Scale is size divided by the default size if it is defined
+        borderScale = (size[0] / (1 if self._defaultSize[0] is None else self._defaultSize[0]),
             size[1] / (1 if self._defaultSize[1] is None else self._defaultSize[1]))
-        return (int(size[0]), int(size[1])), scale
+        #Scale but remove the border
+        scale = ((size[0] - self._border[0] - self._border[2]) / (1 if self._defaultSize[0] is None else self._defaultSize[0]),
+            (size[1] - self._border[1] - self._border[3]) / (1 if self._defaultSize[1] is None else self._defaultSize[1]))
+        return (int(size[0]), int(size[1])), scale, borderScale
 
     def draw(self, parentSize):
         if not self._hidden:
-            self._size, scale = self.calculateSize(parentSize)
+            self._size, scale, borderScale = self.calculateSize(parentSize)
             self._pos = list(self._defaultPos)
+            #If positions are relativie, find their pixle equivlants
             if self._relativity[0]:
                 self._pos[0] *= parentSize[0]
             if self._relativity[1]:
                 self._pos[1] *= parentSize[1]
+            #Position, scale and draw border
             gl.glPushMatrix()
             gl.glTranslatef(self._pos[0], self._pos[1], 0)
+            gl.glScalef(borderScale[0], borderScale[1], 1)
+            self._borderDrawable.draw()
+            gl.glPopMatrix()
+            #Position element and chldren
             gl.glPushMatrix()
+            gl.glTranslatef(self._pos[0] + self._border[0], self._pos[1] + self._border[3], 0)
+            gl.glPushMatrix()
+            #Scale and draw object
             gl.glScalef(scale[0], scale[1], 1)
             self._drawable.draw()
             gl.glPopMatrix()
+            #Call draw on children and pass the size
             for child in self._children:
                 child.draw(self._size)
             gl.glPopMatrix()
@@ -129,6 +162,13 @@ class GuiElement:
     def release(self):
         pass
 
+    def createBoarder(self, border=(0, 0, 0, 0), borderColor=(0,0,0,255)):
+        self._border = border
+        self._borderColor = borderColor
+        self._borderVerts.colors = list(borderColor) * 6
+
+
+
 class GuiButton(GuiElement):
     '''A rectangular gui element that can drawn and clicked on. Will shade when pressed
         Args:
@@ -142,10 +182,12 @@ class GuiButton(GuiElement):
                 False - absolute pixles
                 True - relitive ratio
             color ((int, int, int, int) : optional) - color to draw rectangle, defaults to white
-            onClickColor ((int, int, int, int) : optional) - color to change to when clicked, by default a darker version of the normal color
+            border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+            borderColor ((int, int, int, int) : optional) - color of border, defaults to black
             onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
+            onClickColor ((int, int, int, int) : optional) - color to change to when clicked, by default a darker version of the normal color
     '''
-    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None, onClickColor=None):
+    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), border=(0, 0, 0, 0), borderColor=(0,0,0,255), onClick=None, onClickColor=None):
         batch = pyglet.graphics.Batch()
         self._color = list(color) * 6
         if onClickColor is None:
@@ -161,7 +203,7 @@ class GuiButton(GuiElement):
             ('v2f', (0, 0, size[0], 0, 0, size[1], 0, size[1], size[0], 0, size[0], size[1])),
             ('c4B', (color * 6))
         )
-        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
+        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, border, borderColor, onClick)
 
     def pressed(self, pos, originalPos):
         self._onClick()
@@ -199,11 +241,13 @@ class GuiVertexArray(GuiElement):
                 False - absolute pixles
                 True - relitive ratio
             color ((int, int, int, int) : optional) - color to draw rectangle, defaults to white
+            border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+            borderColor ((int, int, int, int) : optional) - color of border, defaults to black
             onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, vertexs, colors, x, y, indices=None, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), color=(255,255,255,255), onClick=None):
+    def __init__(self, vertexs, colors, x, y, indices=None, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), border=(0, 0, 0, 0), borderColor=(0,0,0,255), color=(255,255,255,255), onClick=None):
         self.setVertexes(vertexs, colors, indices)
-        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, onClick)
+        super().__init__(batch, x, y, width, height, maintainAspectRatio, relativity, border, borderColor, onClick)
 
     def setVertexes(self, vertexs, colors, indices=None):
         '''See __init__
@@ -240,9 +284,11 @@ class GuiImage(GuiElement):
             imgY (int : optional) - y position of subimage
             imgHeight (int : optional) - height of subimage, defaults to maximum size
             imgWidth (int : optional) - width of subimage, defaults to maximum size
+            border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+            borderColor ((int, int, int, int) : optional) - color of border, defaults to black
             onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, img, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), rotation=0, imgX=None, imgY=None, imgHeight=None, imgWidth=None, onClick=None):
+    def __init__(self, img, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), rotation=0, imgX=None, imgY=None, imgHeight=None, imgWidth=None, border=(0, 0, 0, 0), borderColor=(0,0,0,255), onClick=None):
         if type(img) == str:
             img = pyglet.image.load(img)
         if not imgX is None and not imgY is None:
@@ -255,10 +301,10 @@ class GuiImage(GuiElement):
         sprite.update(rotation=rotation)
         if maintainAspectRatio is None:
             if width is None:
-                width = sprite.width
+                width = sprite.width + border[0] + border[2]
             if height is None:
-                height = sprite.height
-        super().__init__(sprite, x, y, width, height, maintainAspectRatio, relativity, onClick)
+                height = sprite.height + border[1] + border[3]
+        super().__init__(sprite, x, y, width, height, maintainAspectRatio, relativity, border, borderColor, onClick)
 
     def calculateSize(self, parentSize):
         size = list(self._defaultSize)
@@ -271,13 +317,15 @@ class GuiImage(GuiElement):
                 size[0] = self._maintainAspectRatio * size[1]
             else:
                 size[1] = self._maintainAspectRatio * size[0]
-        scale = (size[0] / self._drawable.width,
+        borderScale = (size[0] / self._drawable.width,
             size[1] / self._drawable.height)
-        return (int(size[0]), int(size[1])), scale
+        scale = ((size[0] - self._border[0] - self._border[2]) / self._drawable.width,
+            (size[1] - self._border[1] - self._border[3]) / self._drawable.height)
+        return (int(size[0]), int(size[1])), scale, borderScale
 
 
 class GuiText(GuiElement):
-    '''Draw text or HTML, cannot be clickable
+    '''Draw text or HTML
         Args:
             label (pyglet.text.HTMLLabel | pyglet.text.Label) - a drawable object with a text attribute
             x (int | float) - x location to draw relitive to parent, can be pixles or ratio
@@ -288,8 +336,11 @@ class GuiText(GuiElement):
             relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
                 False - absolute pixles
                 True - relitive ratio
+            border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+            borderColor ((int, int, int, int) : optional) - color of border, defaults to black
+            onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, label, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False)):
+    def __init__(self, label, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), border=(0, 0, 0, 0), borderColor=(0,0,0,255), onClick=None):
         if not type(label) in (pyglet.text.HTMLLabel, pyglet.text.Label):
             raise TypeError("Lable must be of type pyglet.text.HTMLLabel or pyglet.text.Label")
         if maintainAspectRatio is None:
@@ -297,7 +348,7 @@ class GuiText(GuiElement):
                 width = 1
             if height is None:
                 height = 1
-        super().__init__(label, x, y, width, height, maintainAspectRatio, relativity)
+        super().__init__(label, x, y, width, height, maintainAspectRatio, relativity, border, borderColor, onClick)
     
     def editText(self, text):
         self._drawable.text = text
@@ -316,10 +367,13 @@ class GuiStaticBatch(GuiElement):
             relativity ((bool, bool, bool, bool)) - Flags if (x, y, width, height) respectively are given in pixles or 0-1 scale relitive to the parent.
                 False - absolute pixles
                 True - relitive ratio
+            border ((int, int, int, int) : optional) - width of optional boarder for each size (left, top, right, bottom)
+            borderColor ((int, int, int, int) : optional) - color of border, defaults to black
+            onClick ((RelitivePos, OrigionalPosition) : optional) - callback function if image is clicked on, each argument is a truple of (int, int)
     '''
-    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False)):
+    def __init__(self, x, y, width=None, height=None, maintainAspectRatio=None, relativity=(False, False, False, False), border=(0, 0, 0, 0), borderColor=(0,0,0,255), onClick=None):
         self._batch = pyglet.graphics.Batch()
-        super().__init__(self._batch, x, y, width, height, maintainAspectRatio, relativity)
+        super().__init__(self._batch, x, y, width, height, maintainAspectRatio, relativity, border, borderColor, onClick)
 
     def addVertexList(self, x, y, vertexs, colors, indices=None):
         """Add a vertex list to the batch

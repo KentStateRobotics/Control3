@@ -74,10 +74,14 @@ class GuiTestMenu(ControlWindow):
     def __init__(self):
         super().__init__()
         rectangle = guiElements.GuiButton(200, 200, .2, .2, relativity=(False, False, True, True),onClick=lambda: print("yo"))
-        self.addElement(rectangle)
-        rectangle.addElement(guiElements.GuiButton(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True),onClick=lambda: print("yoyo")))
-
+        self.addElement(guiElements.GuiButton(100, 100, .8, .8, relativity=(False, False, True, True), color=(128, 128, 128, 255)))
         self.addElement(guiElements.GuiButton(.8, .8, width=.1, onClickColor=(0,255,255,0), maintainAspectRatio=1, relativity=(True, True, True, True), onClick=lambda: print("help")))
+        self.addElement(rectangle)
+
+        rectangle.addElement(guiElements.GuiButton(.1, 20, .5, .5, color=(255,0,0,255), relativity=(True, False, True, True), border=(5,0,0,5), onClick=lambda: print("yoyo")))
+        rectangle.addElement(guiElements.GuiButton(.8, 80, 100, 100, color=(0,255,0,255), relativity=(True, False, False, False), border=(5,5,5,5), onClick=lambda: print("ahh")))
+
+        
 
         self.addElement(guiElements.GuiImage("control3/debugScripts/testTexture.jpg", 0, 0, width=.1, maintainAspectRatio=1, relativity=(False, False, True, False)))
 
