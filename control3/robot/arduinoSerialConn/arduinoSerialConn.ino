@@ -1,51 +1,21 @@
-#ifndef MSG_MODULE
-#define MSG_MODULE
+#define ID 1
+#include "arduinoSerialConn.cpp"
 
-#define START '|'
-//#include "dnode.hpp"
+msgStuff test;
 
-class msgStuff{
-public:
-  void sendId(int ID);
-  void sendMsg(String msg);
-  String recieveMsg();
-private:
-  bool sentId = false;
-  String msgOut = "";
-  String msgIn = "";
-};
-
-void msgStuff::sendId(int ID){
-  Serial.begin(115200);
-  while(!Serial);
-  Serial.println(ID);
+void setup() {
+  test.sendId(ID);
 }
 
-String msgStuff::recieveMsg() {
-  int msgLength;        //lngth of message
-  String msg = "";      //message with corrected start
-
-  char t = Serial.read();
-  if (t == START){
-    msgLength = Serial.parseInt()-1;
-    msg = Serial.readString();
-    //Serial.print(msgLength);
-    //for (int i = 0; i < msgLength; ++i){
-    //  t = Serial.read();
-    //  Serial.print(' ');
-    //  Serial.print(t);
-    //  msg += t;
-    //}
-    return msg;
-  } else{
-    return "";
+int i;
+void loop() {
+  // put your main code here, to run repeatedly:
+  //char msgToSend[] = {'t','e','s','t','\n'};
+  char msg[80];
+  int msgLength = test.recieveMsg(msg, 80);
+  if (msgLength != -1){
+    test.sendMsg(msg, msgLength);
   }
+  //for (i; i < 50; ++i)
+  //  test.sendMsg(msgToSend, 5);
 }
-/*
-void msgStuff::sendMsg(String msg) {
-  //Serial.print('|');
-  //Serial.print(msg.length());
-  Serial.print(msg);
-}
-*/
-#endif

@@ -1,5 +1,5 @@
 from serialConn import msgContainer
-from serialConn import serialConn
+import serialConn
 
 testMsg = msgContainer()
-testMsg.queueMsg("testPy", 1)
+testMsg.queueMsg("qwertyuiop", 1)
