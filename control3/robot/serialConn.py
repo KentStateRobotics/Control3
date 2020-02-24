@@ -8,7 +8,7 @@ class serialConn():
     # the ID member variable of each class is used to identify which one it is connected to
 
     serialConns = []
-    msgToSend = []
+    functionsToCall = []
     readyToSend = False
     START = '|'
     SECONDSTART = '~'
@@ -42,9 +42,23 @@ class serialConn():
                 self.thread.start()
                 serialConn.readyToSend = True
 
+    def addFunction(self, func):
+        self.functionsToCall.append(func())
+
+    def removeFunction(self, func):
+        for p in self.functionsToCall:
+            if p == func:
+                self.functionsToCall.remove(p)
+            else:
+                print("Function not in list")
+
+    def callFunctions(self, argv):
+        for p in self.functionsToCall:
+            p(argv)
+
+
     def sendMsg(self, data):
         # takes the message that is passed to it and sends it over serial connection
-
         self.newConn.write(data)
 
     def recieveMsg(self):
@@ -54,29 +68,12 @@ class serialConn():
 
         print("ready to receive")
         while True:
-            """
-            self.fullMsg = ""
-            self.msgIn = self.newConn.read()
-            print("TYPE",type(self.msgIn))
-            print("CHAR",self.msgIn.decode('utf-8'))
-            if self.msgIn == self.START.encode():
-                self.length = int(self.newConn.read())
-                #self.length = 4
-                print("length: ", self.length)
-                i = 0
-                while i < self.length:
-                    char = self.newConn.read().decode('utf-8')
-                    print("GOT",char)
-                    self.fullMsg += char
-                    print("have recieved: ", self.fullMsg)
-                    i += 1
-                print("received: ", self.fullMsg)
-            """
             msgIn = ""
             msgIn = (self.newConn.readline()).decode('utf-8')
             if msgIn != "":
                 msgStart = msgIn.find(serialConn.SECONDSTART,0,len(msgIn)-1) + 1
                 finMsg = msgIn[msgStart:len(msgIn)-1]
+                self.callFunctions(finMsg)
                 print("final recieved:", finMsg, '\n')
 
 
@@ -95,6 +92,10 @@ class msgContainer():
                 serialConn.serialConns.append(serialConn(p[0]))
         if not self.connected:
             print("No ardunios connected")
+
+    def addFunc(self, func):
+        p = func()
+        serialConn.functionsToCall.append(p)
 
     def queueMsg(self, message, dest):
         # this function will take a message and its target arduino
