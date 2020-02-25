@@ -94,8 +94,7 @@ class msgContainer():
             print("No ardunios connected")
 
     def addFunc(self, func):
-        p = func()
-        serialConn.functionsToCall.append(p)
+        serialConn.functionsToCall.append(func)
 
     def queueMsg(self, message, dest):
         # this function will take a message and its target arduino

@@ -19,6 +19,7 @@ class msgStuff{
     void sendId(int);
     int recieveMsg(char[], int);
     void sendMsg(char[], int);
+    void hdwCode(char[]);
 };
 
 #endif
