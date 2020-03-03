@@ -1,5 +1,5 @@
 #define ID 1
-#include "arduinoSerialConn.cpp"
+#include "arduinoSerialConn.hpp"
 
 msgStuff test;
 

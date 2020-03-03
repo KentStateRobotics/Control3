@@ -1,24 +1,11 @@
-#ifndef MSG_MODULE
-#define MSG_MODULE
-
-#include <arduino.h>
-#define START '|'
-#define SECONDSTART '~'
-
-class msgStuff{
-private:
-  bool sentId = false;
-  String msgOut = "";
-  String msgIn = "";
-
-public: 
-  void sendId(int _ID){
+#include "arduinoSerialConn.hpp"
+  void msgStuff::sendId(int _ID){
     Serial.begin(115200);
     while(!Serial);
     Serial.println(_ID);
   }
   
-  int recieveMsg(char arr[], int maxSize) {
+  int msgStuff::recieveMsg(char arr[], int maxSize) {
     int msgLength;
     
     byte t = Serial.read();
@@ -42,8 +29,8 @@ public:
       return -1;
     }
   }
-  
-  void sendMsg(char msg[], int lngth) {
+
+  void msgStuff::sendMsg(char msg[], int lngth) {
     Serial.print(START);
     Serial.print(lngth);
     Serial.print(SECONDSTART);
@@ -52,5 +39,3 @@ public:
     }
     Serial.print('\n');
   }
-};
-#endif
