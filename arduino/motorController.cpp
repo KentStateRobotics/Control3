@@ -9,7 +9,7 @@ uint8_t magnitudePin, uint8_t feedbackPin, uint16_t pulsesPerRotation, bool inve
     this->feedbackPin = feedbackPin;
     this->pulsesPerRotation = pulsesPerRotation;
     thuis->invertDirection = invertDirection;
-    pinMode(feedbackPin, INPUT);
+    pinMode(feedbackPin, INPUT_PULLUP);
     pinMode(startStopPin, OUTPUT);
     pinMode(runBreakPin, OUTPUT);
     pinMode(directionPin, OUTPUT);

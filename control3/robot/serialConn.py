@@ -49,8 +49,6 @@ class serialConn():
         for p in self.functionsToCall:
             if p == func:
                 self.functionsToCall.remove(p)
-            else:
-                print("Function not in list")
 
     def callFunctions(self, argv):
         for p in self.functionsToCall:
@@ -88,10 +86,7 @@ class msgContainer():
 
         for p in serial.tools.list_ports.comports():
             if "Arduino" in p[1]:
-                self.connected = True
                 serialConn.serialConns.append(serialConn(p[0]))
-        if not self.connected:
-            print("No ardunios connected")
 
     def addFunc(self, func):
         serialConn.functionsToCall.append(func)
@@ -102,19 +97,18 @@ class msgContainer():
         # this function will then pass the formatted message (START-length-msg) 
         #   to the correct instance of serialConn
         # will not send if no connection has been established or ID has not bee recieved
+        # Returns (bool): was message sucessfuly sent
         
-        if not self.connected:
-            print("nothing connected")
-            return
-        else:
-            while not serialConn.readyToSend:
-                pass
-            for p in serialConn.serialConns:
-                if int(p.getId()) == dest:
-                    p.sendMsg(serialConn.START.encode())
-                    test = len(message)
-                    test2 = str(test)
-                    p.sendMsg(test2.encode())
-                    p.sendMsg(serialConn.SECONDSTART.encode())
-                    p.sendMsg(message.encode())
-                    print("should have sent:", serialConn.START, len(message), message)
+        for p in serialConn.serialConns:
+            if int(p.getId()) == dest:
+                while not p.readyToSend:
+                    pass
+                p.sendMsg(serialConn.START.encode())
+                test = len(message)
+                test2 = str(test)
+                p.sendMsg(test2.encode())
+                p.sendMsg(serialConn.SECONDSTART.encode())
+                p.sendMsg(message.encode())
+                print("should have sent:", serialConn.START, len(message), message)
+                return True
+        return False

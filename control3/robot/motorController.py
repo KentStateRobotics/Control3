@@ -1,50 +1,74 @@
-import struct
 import time
+import struct
 
-#big edian 2 chars
-motorStruct = struct.Struct("!cc")
+messageHeader = struct.Struct('<cc') #(motorId, messageId)
+MESSAGES = {
+    oMotorCommand: (0, struct.Struct('<cc')),  #output, Motor command (direction, value)
+    oRequest: (1, struct.Struct('<c')), #output, Request value (otherMessageId)
+    iDeltaPosition: (2, struct.Struct('<i')), #Delta position (deltaPosition)
+    iAbsPosition: (3, struct.Struct('<H')) #Abs positon (position)
+}
 
 class MotorController:
-    """Controls a single motor
+    """Controls one or more motor controllers over a serial connection
+    Can only receive feedback from one motor controller
 
     Args:
+        serialDevice (int): id of the serial device 
+        motorSerialConns (msgContainer): the serial connections to the motor controllers
         motorId (byte): single byte to identify this on the serial connection
-        hasFeedback (bool, Optional): Does this motor have a pulse feedback
     """
-    def __init__(self, motorId, hasFeedback=False):
+    def __init__(self, serialDeviceId, motorSerialConns, motorId):
         self.motorId = motorId
-        self.hasFeedback = hasFeedback
+        self.motorSerialConns = motorSerialConns
+        self.serialDeviceId = serialDeviceId
         self.command = 0
-        self.signed = signed
-        self.deltaDisplacement = 0
-        self.oldTime = 0
-        self.position = 0 #Rad angle of device
-        #TODO serial stuff to find corisponding motor
-        #TODO register callback with serial stuff to receive motor feedback
+        self.postion = 0
+        self.deltaPosition = 0
+        self.posTime = time.time()
+        self.deltaPosTime = time.time()
+        self.lastDeltaPosTime = time.time()
+        motorSerialConns.addFunct(self._receiveFeedback)
     
     def getCommand(self):
         """Get last command to motor
         """
         return self.command
 
-    def getPosition(self):
-        """Returns absolute angle of motor's output
+    def queryPosition(self):
+        """Sends message to serial device to request current position
         """
-        return self.position
+        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iPosition[0])
+        self.motorSerialConns.queueMsg(msg, self.serialDeviceId)
+        
 
-    def getDeltaDisplacement(self):
-        """Get time and difference in position from last time this was called
-        Returns: 
-            float, float: change in time, cumulative change in position sense last call 
+    def queryDeltaPosition(self):
+        """Sends message to serial device to request change in position sense last request
         """
-        deltaTime = time.time() - self.oldTime
-        self.oldTime = time.time()
-        return deltaTime, self.deltaDisplacement
+        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iDeltaPosition[0])
+        self.motorSerialConns.queueMsg(msg, self.serialDeviceId)
+
+    def getPosition(self):
+        """Returns (radians, time) 
+            last absolute angle of motor's output and the time it was received
+        """
+        return self.position, self.posTime
+
+    def getDeltaPosition(self):
+        """Returns (radians, time) 
+            last change in the angle of motor's output and the time it was received
+        """
+        return self.deltaPos, self.deltaPosTime
+
+    def getVelocity(self):
+        """Returns (radians/s) adv roational speed between last two queryDeltaPosition calls
+        """
+        return self.deltaPos / (self.deltaPosTime - self.lastDeltaPosTime)
 
     def _receiveFeedback(self, message):
         """Callback to receive feedback from motor controlers
         """
-        pass
+        if()
     
     def command(self, value):
         """Command the motor to move
@@ -55,5 +79,8 @@ class MotorController:
             raise ValueError("Motor command must be in the range [-1,1]. " + str(value) + " was given.")
             return
         self.command = value
-        value = value * 127 + 127
-        #TODO send motorStruct.pack(self.motorId, value))
+        message = self.packMessage(MESSAGES.oMotorCommand, int(value < 0), abs(value) * 255)
+        self.motorSerialConns.queueMsg(message, self.serialDeviceId)
+
+    def packMessage(self, message, *args):
+        return messageHeader.pack(self.motorId, message[0]) + message[1].pack(*args)
