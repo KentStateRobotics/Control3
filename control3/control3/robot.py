@@ -2,7 +2,7 @@ import argparse
 import networking
 import networking.message
 from robot.serialConn import msgContainer
-from robot.motorController import motorController
+from robot.motorController import MotorController
 
 def main():
     parser = argparse.ArgumentParser(description="Robot controler")
@@ -20,8 +20,8 @@ def main():
 
     serialConns = msgContainer()
 
-    leftMotors = motorController(serialConns, 0)
-    rightMotors = motorController(serialConns, 1)
+    leftMotors = motorController(0, serialConns, 0)
+    rightMotors = motorController(0, serialConns, 1)
 
     while True:
         try:
