@@ -1,6 +1,8 @@
 import time
 import struct
 from enum import Enum
+import math
+
 
 messageHeader = struct.Struct('<BB') #(motorId, messageId)
 class MESSAGES(Enum):
@@ -8,7 +10,6 @@ class MESSAGES(Enum):
     oRequest = 1, struct.Struct('<B') #output, Request value (otherMessageId)
     iDeltaPosition = 2, struct.Struct('<i') #Delta position (deltaPosition)
     iAbsPosition = 3, struct.Struct('<H') #Abs positon (position)
-
 
 class MotorController:
     """Controls one or more motor controllers over a serial connection
@@ -24,7 +25,7 @@ class MotorController:
         self._motorSerialConns = motorSerialConns
         self._serialDeviceId = serialDeviceId
         self._command = 0
-        self._postion = 0
+        self._position = 0
         self._deltaPosition = 0
         self._posTime = time.time()
         self._deltaPosTime = time.time()
@@ -53,7 +54,7 @@ class MotorController:
         """Returns (radians, time) 
             last absolute angle of motor's output and the time it was received
         """
-        return self._postion, self._posTime
+        return self._position, self._posTime
 
     def getDeltaPosition(self):
         """Returns (radians, time) 
@@ -69,7 +70,18 @@ class MotorController:
     def _receiveFeedback(self, message):
         """Callback to receive feedback from motor controlers
         """
-        pass
+        header = messageHeader.unpack_from(message)
+        if(header[0] == self._motorId):
+            if(header[1] == MESSAGES.iAbsPosition.value[0]):
+                body = MESSAGES.iAbsPosition.value[1].unpack_from(message, messageHeader.size)
+                self._position = body[0] / 10800 * math.pi
+                self._posTime = time.time()
+            elif(header[1] == MESSAGES.iDeltaPosition.value[0]):
+                body = MESSAGES.iDeltaPosition.value[1].unpack_from(message, messageHeader.size)
+                self._deltaPosition = body[0] / 10800 * math.pi
+                self._deltaPosTime = time.time()
+
+
     
     def command(self, value):
         """Command the motor to move
@@ -84,9 +96,4 @@ class MotorController:
         self._motorSerialConns.queueMsg(message, self._serialDeviceId)
 
     def packMessage(self, message, *args):
-        print("***************************")
-        for arg in args:
-            print(type(arg))
-        print(type(self._motorId))
-        print(message.value[0])
         return messageHeader.pack(self._motorId, message.value[0]) + message.value[1].pack(*args)
