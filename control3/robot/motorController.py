@@ -40,14 +40,14 @@ class MotorController:
     def queryPosition(self):
         """Sends message to serial device to request current position
         """
-        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iPosition[0])
+        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iAbsPosition.value[0])
         self._motorSerialConns.queueMsg(msg, self._serialDeviceId)
         
 
     def queryDeltaPosition(self):
         """Sends message to serial device to request change in position sense last request
         """
-        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iDeltaPosition[0])
+        msg = self.packMessage(MESSAGES.oRequest, MESSAGES.iDeltaPosition.value[0])
         self._motorSerialConns.queueMsg(msg, self._serialDeviceId)
 
     def getPosition(self):
