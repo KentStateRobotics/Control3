@@ -18,10 +18,12 @@ class TestMotorController(unittest.TestCase):
         self.serialConn.queueMsg.assert_called_with(messageHeader.pack(1, MESSAGES.oMotorCommand.value[0]) + MESSAGES.oMotorCommand.value[1].pack(1, 204), 0)
 
     def test_queryPosition(self):
-        pass
+        self.controller.queryPosition()
+        self.serialConn.queueMsg.assert_called_once_with(b"\x01\x01\x03", 0)
 
     def test_queryDeltaPos(self):
-        pass
+        self.controller.queryDeltaPosition()
+        self.serialConn.queueMsg.assert_called_once_with(b"\x01\x01\x02", 0)
 
     def test_receivePosition(self):
         self.controller._position = 0
