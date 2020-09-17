@@ -1,17 +1,29 @@
-# Control3
-2020 RMC Robot controller.
+# KSRCore
+2021 Robot controller and remote manager\
+Python with C++ extensions\
+Must be compadable with Windows and Ubuntu on both AMD64 and ARM processors\
 
 # Setup
-Install python 3 https://www.python.org/downloads/
-Make sure to check the box to automaticly add python to your path during the install.
-Depending on your system, python may be need to be ran using the commands py or python3.
-
+Install python 3 https://www.python.org/downloads/\
+Make sure to check the box to automaticly add python to your path during the install.\
+Depending on your system, python may be need to be ran using the commands py or python3.\
+\
+Downloading the repository
 ```
-cd control3
+git clone https://github.com/KentStateRobotics/KSRCore.git
+cd KSRCore
+git submodule init
+git submodule update
+```
+```
 pip install -r requirements.txt
-python setup.py develop
+python3 setup.py develop
 or
-python setup.py install
+python3 setup.py install
+```
+Generate Documentation
+```
+pdoc --html --output-dir docs src.KSRCore  
 ```
 
 # Usage
@@ -42,13 +54,8 @@ optional arguments:
 
 # Testing
 Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery. Use -b to suppress print statements, remove so see print statements
-
 ```
-python setup.py test
-```
-or
-```
-py setup.py test
+python3 -m unittest
 ```
 # Maintance
 New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires

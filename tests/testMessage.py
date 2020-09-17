@@ -1,4 +1,4 @@
-from networking.message import Message
+from KSRCore.networking.message import Message
 import unittest
 from unittest import mock
 

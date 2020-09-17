@@ -1,4 +1,4 @@
-from robot.motorController import MotorController, messageHeader, MESSAGES
+from KSRCore.robot.motorController import MotorController, messageHeader, MESSAGES
 import unittest
 from unittest import mock
 import math

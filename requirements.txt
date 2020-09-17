@@ -4,5 +4,5 @@ numpy
 opencv-contrib-python
 timeout-decorator
 Cython
-pyglet
 pyrealsense2
+pdoc3

@@ -5,25 +5,23 @@ from setuptools.extension import Extension
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-
 setup(
-    name='control3',
-    description='KSU robot control 3',
-    py_modules=['control3', 'networking', 'slam'],
+    name='KSRCore',
+    description='KSU robot control core',
+    py_modules=['KSRCore'],
     install_requires=requirements,
     zip_safe=False,
     entry_points={
         'console_scripts':[
-            'control3 = control3.control:main',
-            'robot = control3.robot:main'
+            'KSRControl = KSRCore.entry.control:main',
+            'KSRRobot = KSRCore.entry.robot:main'
         ]
     },
     cmdclass = {'build_ext': build_ext},
     ext_modules=[
     #    Extension("debugScripts.cythonExtentionTest", ["debugScripts/cythonExtentionTest.pyx"]),
     #    Extension("debugScripts.cExtentionTest", sources = ["debugScripts/cExtentionTest.cpp"])
-        Extension("slam.processing", sources = ["slam/processing.cpp"]),
-        Extension("slam.cMap", sources = ["slam/map2py.cpp", "slam/map.cpp"])
-    ],
-    test_suite="tests"
+        Extension("KSRCore.slam.processing", sources = ["KSRCore/slam/processing.cpp"]),
+        Extension("KSRCore.slam.cMap", sources = ["KSRCore/slam/map2py.cpp", "KSRCore/slam/map.cpp"])
+    ]
 )

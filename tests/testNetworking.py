@@ -1,11 +1,11 @@
 import unittest
 from unittest import mock
-import networking
-from networking.message import Message
-import networking.messages as messages
-from networking.subscriber import Subscriber
-from networking.discovery import Discovery
-import networking.service as service
+import KSRCore.networking as networking
+from KSRCore.networking.message import Message
+import KSRCore.networking.messages as messages
+from KSRCore.networking.subscriber import Subscriber
+from KSRCore.networking.discovery import Discovery
+import KSRCore.networking.service as service
 import socket
 
 source = Message.padString("source", Message.NAME_LENGTH)
@@ -105,7 +105,7 @@ class TestPublisher(unittest.TestCase):
 
 class TestServer(unittest.TestCase):
 
-    @mock.patch('networking.Server.Thread')
+    @mock.patch('KSRCore.networking.Server.Thread')
     def test_send(self, serverThread):
         client = mock.MagicMock()
         server = networking.Server("server", 4242)
@@ -128,7 +128,7 @@ class TestServer(unittest.TestCase):
         server.send(msg['header'], packedMsg)
         client.send.assert_called_once_with(packedMsg)
 
-    @mock.patch('networking.Server.Thread')
+    @mock.patch('KSRCore.networking.Server.Thread')
     def test_addSubscriber(self, serverThread):
         server = networking.Server("server", 4242)
         sub = server.addSubscriber("source", "topic", testMsg, None)
@@ -140,7 +140,7 @@ class TestServer(unittest.TestCase):
         msg['remove'] = False
         self.assertEqual(sub.getRegisterMsg(), msg)
 
-    @mock.patch('networking.Server.Thread')
+    @mock.patch('KSRCore.networking.Server.Thread')
     def test_registerSubscriber(self, serverThread):
         client = mock.MagicMock()
         client.name = source
@@ -160,7 +160,7 @@ class TestServer(unittest.TestCase):
         server._recSubRegister(msg)
         self.assertEqual(msg, client.subscribers[0])
 
-    @mock.patch('networking.Server.Thread')
+    @mock.patch('KSRCore.networking.Server.Thread')
     def test_registerSubscriberRemove(self, serverThread):
         client = mock.MagicMock()
         client.name = source
@@ -185,8 +185,8 @@ class TestServer(unittest.TestCase):
 class TestClient(unittest.TestCase):
 
     @mock.patch('time.time', return_value=1)
-    @mock.patch('networking.Client.Thread')
-    @mock.patch('networking.Client.send')
+    @mock.patch('KSRCore.networking.Client.Thread')
+    @mock.patch('KSRCore.networking.Client.send')
     def test_addSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
         sub = client.addSubscriber(source, topic, testMsg, None)
@@ -204,8 +204,8 @@ class TestClient(unittest.TestCase):
         send.assert_called_once_with(msg['header'], messages.SubscriberMsg.pack(msg))
 
     @mock.patch('time.time', return_value=1)
-    @mock.patch('networking.Client.Thread')
-    @mock.patch('networking.Client.send')
+    @mock.patch('KSRCore.networking.Client.Thread')
+    @mock.patch('KSRCore.networking.Client.send')
     def test_rmoveSubscriber(self, send, clientThread, time):
         client = networking.Client("client", 4242, host="127.0.0.1")
         sub = client.addSubscriber(source, topic, testMsg, None)
