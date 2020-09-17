@@ -1,0 +1,3 @@
+[submodule "KSRWebGUI"]
+	path = KSRWebGUI
+	url = https://github.com/KentStateRobotics/KSRWebGUI.git
