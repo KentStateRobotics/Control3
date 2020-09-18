@@ -1,7 +1,29 @@
-#!/usr/bin/env python
 '''
 message
 KentStateRobotics Jared Butcher 7/26/2019
+Message Types:
+    Struct Types:
+        Format  C-Type              Python-Type     Size
+        x       pad byte            NA              1
+        c       char                bytes           1
+        b       signed char         int             1
+        B       unsigned char       int             1
+        ?       bool                bool            1
+        h       short               int             2
+        H       unsigned short      int             2
+        i       int                 int             4
+        I       unsigned int        int             4
+        l       long                int             4
+        L       unsigned long       int             4
+        q       long long           int             8
+        Q       unsigned long long  int             8
+        e       half                float           2
+        f       float               float           4
+        d       double              float           8
+        s       char[]              bytes           Fixed size n used as "ns"
+        p       char[]              bytes           <= 255 Pascal string sized n used as "np"
+    Variable Length Types:
+        blob    char[]              bytes           variable
 '''
 import struct
 from enum import Enum
@@ -11,8 +33,6 @@ class Message:
 
     messageDefinition - a dicitonary of keys and data types or other Messages
     '''
-
-    NAME_LENGTH = 10
 
     '''Standared Message that is automaticly added to the top level of all Messages, defined at bottom of file
     '''
@@ -115,31 +135,9 @@ class Message:
         header, data = Message.Header.unpack(data, topLevel=False)
         return header
 
-    def padString(value, length):
-        '''Static function that takes a string or bytes and either pads or truncates it to the length
-
-        returns bytes
-        '''
-        if type(value) == str:
-            value = value.encode()
-        adjValue = value[:length]
-        adjValue += b'\x00' * (length - len(adjValue))
-        return adjValue
-
-    class MessageType(Enum):
-        '''Used in header to define what type of message is being published under the topic
-        '''
-        PUBLISHER = b'\x00'
-        REQUEST = b'\x01'
-        RESPONSE = b'\x02'
-        STATUS = b'\x03'
-        RESULT = b'\x04'
-
-
 Message.Header = Message({
     'timestamp': 'f',
-    'source': str(Message.NAME_LENGTH) + 's',
-    'topic': str(Message.NAME_LENGTH) + 's',
-    'messageType': 'c',
-    'sequence': 'I'
+    'source': '2s',
+    'destination': '2s',
+    'messageType': 'c'
 }, includeHeader=False)

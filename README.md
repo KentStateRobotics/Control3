@@ -23,7 +23,7 @@ python3 setup.py install
 ```
 Generate Documentation
 ```
-pdoc --html --output-dir docs src.KSRCore  
+pdoc --html --output-dir docs KSRCore  
 ```
 
 # Usage

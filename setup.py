@@ -11,6 +11,7 @@ setup(
     py_modules=['KSRCore'],
     install_requires=requirements,
     zip_safe=False,
+    python_requires='==3.7.*',
     entry_points={
         'console_scripts':[
             'KSRControl = KSRCore.entry.control:main',
