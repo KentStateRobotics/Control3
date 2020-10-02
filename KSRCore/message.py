@@ -26,17 +26,19 @@ Message Types:
         blob    char[]              bytes           variable
 '''
 import struct
+from collections import UserDict
 from enum import Enum
+import json
 
-class Message:
+class MessageFactory:
     '''Used to define messages that can be converted to and from bytes for exchange
 
-    messageDefinition - a dicitonary of keys and data types or other Messages
+    messageDefinition - a dicitonary of keys and data types or other MessageFactories
     '''
 
-    '''Standared Message that is automaticly added to the top level of all Messages, defined at bottom of file
+    '''Standared Message Header is automaticly added to the top level of all Messages
     '''
-    Header = None
+    _Header = None
 
     def __init__(self, messageDefinition, includeHeader=True):
         self.definition = messageDefinition
@@ -66,7 +68,8 @@ class Message:
         structValues = []
         data = bytes()
         if topLevel:
-            data += Message.Header.pack(values['header'], topLevel=False)
+            data += b's' #Mark as struct as opposed to json
+            data += MessageFactory._Header.pack(values['header'], topLevel=False)
         for key in self.structKeys:
             structValues.append(values[key])
         try:
@@ -96,7 +99,7 @@ class Message:
         topLevel = topLevel and self.includeHeader
         outDict = self._createDict(topLevel=topLevel)
         if topLevel:
-            outDict['header'], data = Message.Header.unpack(data, topLevel=False)
+            outDict['header'], data = MessageFactory._Header.unpack(data[1:], topLevel=False)
         structValues = self.struct.unpack_from(data)
         for i in range(len(structValues)):
             outDict[self.structKeys[i]] = structValues[i]
@@ -121,23 +124,62 @@ class Message:
             else:
                 outDict[key] = value._createDict(topLevel=False)
         if topLevel:
-            outDict['header'] = Message.Header._createDict(topLevel=False)
+            outDict['header'] = MessageFactory._Header._createDict(topLevel=False)
         return outDict
+
+    def getFormat(self):
+        '''Returns a copy of this Factory's format dictionary. To be filled and packed.
+        '''
+        return self.dictFormat.copy()
+
+    def createMessage(self, initalValues=None):
+        '''Returns an empty Message to be filled
+        '''
+        if initalValues is None:
+            return Message(self, self.getFormat())
+        else:
+            return Message(self, initalValues)
+
+    def loads(self, data):
+        if data[0] == ord('s'):
+            return Message(self, self.unpack(data)[0])
+        elif data[0] == '{':
+            return Message(self, json.loads(data))
+        else:
+            print("Failed to load message data")
+
+class Message(UserDict):
+    def __init__(self, factory, initalValues):
+        super().__init__(initalValues)
+        self._factory = factory
+
+    def toStruct(self):
+        return self._factory.pack(self)
+
+    def toJson(self):
+        print(self.data)
+        return json.dumps(self.data, cls=JSONBytesEncoder)
+
+    @staticmethod
+    def peekHeader(data):
+        '''Static function that removes and unpacks a messages header
+        '''
+        return MessageFactory._Header.loads(data)
 
     def getFormat(self):
         '''Returns a copy of this Messages format dictionary. To be filled and packed.
         '''
-        return self.dictFormat.copy()
+        return self._factory.getFormat()
 
-    def peekHeader(data):
-        '''Static function that removes and unpacks a messages header
-        '''
-        header, data = Message.Header.unpack(data, topLevel=False)
-        return header
+class JSONBytesEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, bytes):
+            return obj.decode('utf-8')
+        return json.JSONEncoder.default(self, obj)
 
-Message.Header = Message({
+MessageFactory._Header = MessageFactory({
     'timestamp': 'f',
-    'source': '2s',
-    'destination': '2s',
-    'messageType': 'c'
+    'source': 'B',
+    'channel': 'B',
+    'type': 'B'
 }, includeHeader=False)

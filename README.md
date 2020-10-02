@@ -55,7 +55,7 @@ optional arguments:
 # Testing
 Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery. Use -b to suppress print statements, remove so see print statements
 ```
-python3 -m unittest
+pytest
 ```
 # Maintance
 New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires
