@@ -99,8 +99,8 @@ def test_messageFactory_structPack(testMessageFactory):
     msg['header']['channel'] = 0x74
     msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73
-    data = structMsg.pack(msg)
-    unpackedData = structMsg.unpack(data)[0]
+    data = structMsg._pack(msg)
+    unpackedData = structMsg._unpack(data[1:])[0]
     assert msg == unpackedData
 
 def test_messageFactory_blob(testMessageFactory):
@@ -115,8 +115,8 @@ def test_messageFactory_blob(testMessageFactory):
     msg['header']['channel'] = 0x74
     msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73
-    data = structMsg.pack(msg)
-    unpackedData = structMsg.unpack(data)[0]
+    data = structMsg._pack(msg)
+    unpackedData = structMsg._unpack(data[1:])[0]
     assert msg == unpackedData
 
 def test_message_Struct(testMessages):
@@ -125,8 +125,39 @@ def test_message_Struct(testMessages):
     assert header == testMessages['filledHeader']
 
 def test_message_JSON(testMessages):
-    print(testMessages['filledHeader']['header']['type'])
-    print(type(testMessages['filledHeader']['header']['type']))
     data = testMessages['filledHeader'].toJson()
     header = testMessages['headerMsg'].loads(data)
     assert header == testMessages['filledHeader']
+
+def test_message_JSON_nested(testMessages):
+    msg = testMessages['testNestedMsg'].createMessage()
+    msg['header'] = testMessages['filledHeader']['header']
+    msg['num'] = 435
+    msg['test'] = testMessages['testMsg'].createMessage({
+        'num': 987876,
+        'blob': 'This is a string entry'
+    })
+    data = msg.toJson()
+    msg2 = testMessages['testNestedMsg'].loads(data)
+    assert msg == msg2
+
+def test_message_struct_nested(testMessages):
+    msg = testMessages['testNestedMsg'].createMessage()
+    msg['header'] = testMessages['filledHeader']['header']
+    msg['num'] = 435
+    msg['test'] = testMessages['testMsg'].createMessage({
+        'num': 987876,
+        'blob': b'This is a string entry'
+    })
+    data = msg.toStruct()
+    msg2 = testMessages['testNestedMsg'].loads(data)
+    assert msg == msg2
+
+def test_peek_header_struct(testMessages):
+    data = testMessages['filledTestMsg'].toStruct()
+    assert Message.peekHeader(data) == testMessages['filledTestMsg']['header']
+
+def test_peek_header_JSON(testMessages):
+    data = testMessages['filledTestMsg'].toJson()
+    assert Message.peekHeader(data) == testMessages['filledTestMsg']['header']
+    

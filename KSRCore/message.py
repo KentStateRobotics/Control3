@@ -59,7 +59,7 @@ class MessageFactory:
         self.struct = struct.Struct(self.structFormat)
         self.dictFormat = self._createDict()
 
-    def pack(self, values, topLevel=True):
+    def _pack(self, values, topLevel=True):
         '''Returns bytes of the dictionary values packed according to this Messages definition
 
         topLevel - if True include a header
@@ -69,7 +69,7 @@ class MessageFactory:
         data = bytes()
         if topLevel:
             data += b's' #Mark as struct as opposed to json
-            data += MessageFactory._Header.pack(values['header'], topLevel=False)
+            data += MessageFactory._Header._pack(values['header'], topLevel=False)
         for key in self.structKeys:
             structValues.append(values[key])
         try:
@@ -79,7 +79,7 @@ class MessageFactory:
             print("Into: " + str(self.definition))
             raise e
         for key in self.messageKeys:
-            data += self.definition[key].pack(values[key], topLevel=False)
+            data += self.definition[key]._pack(values[key], topLevel=False)
         for key in self.blobKeys:
             data += len(values[key]).to_bytes(4, "big")
             if type(values[key]) == str:
@@ -88,7 +88,7 @@ class MessageFactory:
                 data += values[key]
         return data
 
-    def unpack(self, data, topLevel=True):
+    def _unpack(self, data, topLevel=True):
         '''Unpacks the bytes into a dictionary according to this Messages definition.
         Returns dictionary of unpacked values, remaining bytes
 
@@ -99,13 +99,13 @@ class MessageFactory:
         topLevel = topLevel and self.includeHeader
         outDict = self._createDict(topLevel=topLevel)
         if topLevel:
-            outDict['header'], data = MessageFactory._Header.unpack(data[1:], topLevel=False)
+            outDict['header'], data = MessageFactory._Header._unpack(data, topLevel=False)
         structValues = self.struct.unpack_from(data)
         for i in range(len(structValues)):
             outDict[self.structKeys[i]] = structValues[i]
         data = data[self.struct.size:]
         for key in self.messageKeys:
-            outDict[key], data = self.definition[key].unpack(data, topLevel=False)
+            outDict[key], data = self.definition[key]._unpack(data, topLevel=False)
         for key in self.blobKeys:
             size = int.from_bytes(data[:4], "big")
             data = data[4:]
@@ -133,7 +133,9 @@ class MessageFactory:
         return self.dictFormat.copy()
 
     def createMessage(self, initalValues=None):
-        '''Returns an empty Message to be filled
+        '''Create a message
+        Args:
+            initalValues (dict | Optional): If given, initalize the message with this dictionary
         '''
         if initalValues is None:
             return Message(self, self.getFormat())
@@ -141,40 +143,64 @@ class MessageFactory:
             return Message(self, initalValues)
 
     def loads(self, data):
+        '''Create a message from incoming data
+        Accepts byte array or json string
+        '''
         if data[0] == ord('s'):
-            return Message(self, self.unpack(data)[0])
+            return Message(self, self._unpack(data[1:])[0])
         elif data[0] == '{':
             return Message(self, json.loads(data))
         else:
             print("Failed to load message data")
 
 class Message(UserDict):
+    '''Dictionay for building and manipulating messages
+    Do not create directly, use a Message Factory to create
+    Values can be added, retereived, or modified using dictionary functions
+
+    NOTE    The JSON encoding will only accept byte arrays that can be encoded to UTF-8 strings, no raw bytes.
+            The JSON encoding is flexable, and does not need to have all entries filled, supportes arrays, dictionaries, 
+                and allows aditional fields to be added
+
+            The Struct format will convert strings to byte arrays.
+            The Struct format must follow the messageDefinition of the MessageFactory.
+            Sub messages can be filled with either a dictionary or a Message object.
+
+    '''
     def __init__(self, factory, initalValues):
         super().__init__(initalValues)
         self._factory = factory
 
     def toStruct(self):
-        return self._factory.pack(self)
+        '''Packs message into a struct and returns the bytes
+        '''
+        return self._factory._pack(self)
 
     def toJson(self):
-        print(self.data)
-        return json.dumps(self.data, cls=JSONBytesEncoder)
-
-    @staticmethod
-    def peekHeader(data):
-        '''Static function that removes and unpacks a messages header
+        '''Packs message into a json string
         '''
-        return MessageFactory._Header.loads(data)
+        return json.dumps(self.data, cls=JSONBytesEncoder)
 
     def getFormat(self):
         '''Returns a copy of this Messages format dictionary. To be filled and packed.
         '''
         return self._factory.getFormat()
 
+    @staticmethod
+    def peekHeader(data):
+        '''Static function that removes and unpacks a messages header
+        '''
+        if data[0] == ord('s'):
+            return MessageFactory._Header.loads(data)
+        elif data[0] == '{':
+            return MessageFactory._Header.createMessage(json.loads(data)['header'])
+
 class JSONBytesEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, bytes):
             return obj.decode('utf-8')
+        if isinstance(obj, Message):
+            return obj.data
         return json.JSONEncoder.default(self, obj)
 
 MessageFactory._Header = MessageFactory({
