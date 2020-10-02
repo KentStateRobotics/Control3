@@ -29,6 +29,7 @@ import struct
 from collections import UserDict
 from enum import Enum
 import json
+import time
 
 class MessageFactory:
     '''Used to define messages that can be converted to and from bytes for exchange
@@ -185,6 +186,15 @@ class Message(UserDict):
         '''Returns a copy of this Messages format dictionary. To be filled and packed.
         '''
         return self._factory.getFormat()
+
+    def setHeader(self, source, channel, messageType, timestamp=None):
+        '''A shortcut for setting header values
+        '''
+        self['header'] = {}
+        self['header']['source'] = source
+        self['header']['channel'] = channel
+        self['header']['type'] = messageType
+        self['header']['timestamp'] = time.time() if timestamp is None else timestamp
 
     @staticmethod
     def peekHeader(data):

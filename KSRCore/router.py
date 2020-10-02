@@ -1,13 +1,17 @@
 import multiprocessing
 import threading
-import message
+import KSRCore.message as message
 
-class Router():
+JOIN_TIMEOUT = .2
+
+class Router(threading.Thread):
     def __init__(self):
+        super().__init__(name="Router_Handlers", daemon=True)
         self._queue = multiprocessing.SimpleQueue()
         self._handlers = {}
         self._handlerLock = threading.Lock()
-        self._handlerThread = threading.Thread(target=)
+        self._stopEvent = threading.Event()
+        self.start()
 
     def addHandler(self, channel, handler):
         with self._handlerLock:
@@ -23,9 +27,18 @@ class Router():
     def put(self, message):
         self._queue.put(message)
 
-    def _runHander(self):
-        if not self._queue.empty():
-            message = self._queue.get()
-            handler = None
-            with self._handlerLock:
-                handler = self._handlers[message.Message.peekHeader(message)]
+    def stop(self):
+        self._stopEvent.set()
+        self.join(JOIN_TIMEOUT)
+
+    def run(self):
+        while True:
+            if not self._queue.empty():
+                data = self._queue.get()
+                handler = None
+                with self._handlerLock:
+                    handler = self._handlers.get(message.Message.peekHeader(data)['channel'])
+                    if handler:
+                        handler(data)
+            if self._stopEvent.is_set():
+                return
