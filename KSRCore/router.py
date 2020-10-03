@@ -1,8 +1,10 @@
 import multiprocessing
 import threading
 import KSRCore.message as message
+import logging
 
 JOIN_TIMEOUT = .2
+RouterLogger = logging.getLogger("KSRC.Router")
 
 class Router(threading.Thread):
     def __init__(self):
@@ -29,9 +31,13 @@ class Router(threading.Thread):
 
     def stop(self):
         self._stopEvent.set()
+        RouterLogger.debug("Stopping handler thread")
         self.join(JOIN_TIMEOUT)
+        if self.is_alive():
+            RouterLogger.warning("Handler thread failed to stop")
 
     def run(self):
+        RouterLogger.debug("Starting handler thread")
         while True:
             if not self._queue.empty():
                 data = self._queue.get()

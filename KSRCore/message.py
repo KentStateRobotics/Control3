@@ -30,6 +30,9 @@ from collections import UserDict
 from enum import Enum
 import json
 import time
+import logging
+
+MessageLogger = logging.getLogger("KSRC.Message")
 
 class MessageFactory:
     '''Used to define messages that can be converted to and from bytes for exchange
@@ -76,8 +79,7 @@ class MessageFactory:
         try:
             data += self.struct.pack(*structValues)
         except struct.error as e:
-            print("Error occured while packing: " + str(structValues))
-            print("Into: " + str(self.definition))
+            MessageLogger.error("Error occured while packing: " + str(structValues) + " Into: " + str(self.definition))
             raise e
         for key in self.messageKeys:
             data += self.definition[key]._pack(values[key], topLevel=False)
