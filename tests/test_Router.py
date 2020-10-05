@@ -14,6 +14,7 @@ def createMessages():
         'header':{
             'timestamp': 424.5,
             'source': 0x73,
+            'destination': 0xa0,
             'channel': 0x69,
             'type': 0xa1,
         },
@@ -55,3 +56,9 @@ def test_router_route(createMessages):
     mock1.assert_called_once()
     mock2.assert_not_called()
     mock3.assert_called_once()
+
+def test_router_unhandled(createMessages):
+    router = Router()
+    router.put(createMessages['message'].toStruct())
+    time.sleep(.1)
+    router.stop()

@@ -12,6 +12,7 @@ def testMessageFactory():
         'headerFormat': {
             'timestamp': None,
             'source': None,
+            'destination': None,
             'channel': None,
             'type': None
         }
@@ -32,6 +33,7 @@ def testMessages():
         'headerFormat': {
             'timestamp': None,
             'source': None,
+            'destination': None,
             'channel': None,
             'type': None
         }
@@ -45,6 +47,7 @@ def testMessages():
         'header':{
             'timestamp': 424.5,
             'source': 0x73,
+            'destination': 0xab,
             'channel': 0x66,
             'type': 0x89
         }
@@ -53,6 +56,7 @@ def testMessages():
         'header':{
             'timestamp': 424.5,
             'source': 0x73,
+            'destination': 0xab,
             'channel': 0x99,
             'type': 0xa1,
         },
@@ -96,6 +100,7 @@ def test_messageFactory_structPack(testMessageFactory):
     msg['chars'] = b'there'
     msg['pascal'] = b'VarLength string'
     msg['header']['source'] = 0x73
+    msg['header']['destination'] = 0xcd
     msg['header']['channel'] = 0x74
     msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73
@@ -112,6 +117,7 @@ def test_messageFactory_blob(testMessageFactory):
     msg['int'] = 543
     msg['blob'] = str.encode('A rather not too short message or something')
     msg['header']['source'] = 0x73
+    msg['header']['destination'] = 0xcd
     msg['header']['channel'] = 0x74
     msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73

@@ -1,3 +1,9 @@
+'''
+router
+KentStateRobotics Jared Butcher 10/5/2020
+
+Routes messages for general interprocess and socket communication
+'''
 import multiprocessing
 import threading
 import KSRCore.message as message
@@ -46,5 +52,7 @@ class Router(threading.Thread):
                     handler = self._handlers.get(message.Message.peekHeader(data)['channel'])
                     if handler:
                         handler(data)
+                    else:
+                        RouterLogger.warning("Unhandled message dropped")
             if self._stopEvent.is_set():
                 return

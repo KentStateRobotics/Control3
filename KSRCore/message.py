@@ -189,11 +189,12 @@ class Message(UserDict):
         '''
         return self._factory.getFormat()
 
-    def setHeader(self, source, channel, messageType, timestamp=None):
+    def setHeader(self, source, destination, channel, messageType, timestamp=None):
         '''A shortcut for setting header values
         '''
         self['header'] = {}
         self['header']['source'] = source
+        self['header']['destination'] = destination
         self['header']['channel'] = channel
         self['header']['type'] = messageType
         self['header']['timestamp'] = time.time() if timestamp is None else timestamp
@@ -218,6 +219,7 @@ class JSONBytesEncoder(json.JSONEncoder):
 MessageFactory._Header = MessageFactory({
     'timestamp': 'f',
     'source': 'B',
+    'destination': 'B',
     'channel': 'B',
     'type': 'B'
 }, includeHeader=False)

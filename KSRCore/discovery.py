@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 discovery
 KentStateRobotics Jared Butcher 7/29/2019
@@ -6,6 +5,9 @@ KentStateRobotics Jared Butcher 7/29/2019
 import socket
 import asyncio
 import time
+
+DEFAULT_PORT = 4242
+DEFAULT_DISCOVERY_PORT = 4243
 
 class Discovery:
     '''Used UTP broadcasts to find users running echoAddress
