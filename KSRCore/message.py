@@ -27,9 +27,8 @@ Message Types:
 '''
 import struct
 from collections import UserDict
-from enum import Enum
+import enum
 import json
-import time
 import logging
 
 MessageLogger = logging.getLogger("KSRC.Message")
@@ -189,7 +188,7 @@ class Message(UserDict):
         '''
         return self._factory.getFormat()
 
-    def setHeader(self, source, destination, channel, messageType, timestamp=None):
+    def setHeader(self, source, destination, channel, messageType):
         '''A shortcut for setting header values
         '''
         self['header'] = {}
@@ -197,7 +196,6 @@ class Message(UserDict):
         self['header']['destination'] = destination
         self['header']['channel'] = channel
         self['header']['type'] = messageType
-        self['header']['timestamp'] = time.time() if timestamp is None else timestamp
 
     @staticmethod
     def peekHeader(data):
@@ -217,7 +215,6 @@ class JSONBytesEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 MessageFactory._Header = MessageFactory({
-    'timestamp': 'f',
     'source': 'B',
     'destination': 'B',
     'channel': 'B',

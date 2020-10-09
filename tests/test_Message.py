@@ -10,7 +10,6 @@ def testMessageFactory():
             'blob': 'blob'
         }),
         'headerFormat': {
-            'timestamp': None,
             'source': None,
             'destination': None,
             'channel': None,
@@ -31,7 +30,6 @@ def testMessages():
             'blob': 'blob'
         }),
         'headerFormat': {
-            'timestamp': None,
             'source': None,
             'destination': None,
             'channel': None,
@@ -45,7 +43,6 @@ def testMessages():
     messages['headerMsg'] = MessageFactory({})
     messages['filledHeader'] = messages['headerMsg'].createMessage({
         'header':{
-            'timestamp': 424.5,
             'source': 0x73,
             'destination': 0xab,
             'channel': 0x66,
@@ -54,7 +51,6 @@ def testMessages():
     })
     messages['filledTestMsg'] = messages['testMsg'].createMessage({
         'header':{
-            'timestamp': 424.5,
             'source': 0x73,
             'destination': 0xab,
             'channel': 0x99,
@@ -102,7 +98,6 @@ def test_messageFactory_structPack(testMessageFactory):
     msg['header']['source'] = 0x73
     msg['header']['destination'] = 0xcd
     msg['header']['channel'] = 0x74
-    msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73
     data = structMsg._pack(msg)
     unpackedData = structMsg._unpack(data[1:])[0]
@@ -119,7 +114,6 @@ def test_messageFactory_blob(testMessageFactory):
     msg['header']['source'] = 0x73
     msg['header']['destination'] = 0xcd
     msg['header']['channel'] = 0x74
-    msg['header']['timestamp'] = 703452.5
     msg['header']['type'] = 0x73
     data = structMsg._pack(msg)
     unpackedData = structMsg._unpack(data[1:])[0]
