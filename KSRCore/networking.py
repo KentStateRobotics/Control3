@@ -26,6 +26,9 @@ class Channels(enum.IntEnum):
     NETWORKING = 0
     LOGGING = 1
 
+class NetworkingTypes(enum.IntEnum):
+    ID_ASSIGN = 0
+
 class Networking(threading.Thread):
     def __init__(self, address):
         super().__init__(name="Networking", daemon=True)
@@ -45,12 +48,16 @@ class Networking(threading.Thread):
         raise NotImplementedError("Do not use Networking directly")
 
     def stop(self):
-        if self._eventLoop is not None and (self._eventLoop.is_running() or not self._eventLoop.is_closed()):
-            def stopLoop():
-                self._eventLoop.stop()
-            self._eventLoop.call_soon_threadsafe(stopLoop)
-        networkingLogger.debug("Stopping networking thread")
-        self.join(STOP_TIMEOUT)
+        async def stopLoop(tasks):
+            await asyncio.gather(*tasks, return_exceptions=True)
+            self._eventLoop.stop()
+        with self._handlerLock:
+            if self._eventLoop is not None and (self._eventLoop.is_running() or not self._eventLoop.is_closed()):
+                tasks = asyncio.all_tasks(loop=self._eventLoop)
+                [task.cancel() for task in tasks]
+                self._eventLoop.create_task(stopLoop(tasks))
+            networkingLogger.debug("Stopping networking thread")
+            self.join(STOP_TIMEOUT)
         self._queue.close()
         if self.is_alive():
             networkingLogger.warning("Networking thread failed to stop")
@@ -74,12 +81,13 @@ class Networking(threading.Thread):
     def run(self):
         self._eventLoop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._eventLoop)
-        asyncio.run_coroutine_threadsafe(self._runRouter(), self._eventLoop)
+        self._eventLoop.create_task(self._runRouter())
 
     async def _runRouter(self):
         networkingLogger.debug("Starting handler thread")
         while True:
             await asyncio.sleep(ROUTER_SLEEP)
+            readd = []
             while not self._queue.empty():
                 data = self._queue.get()
                 header = message.Message.peekHeader(data)
@@ -94,24 +102,35 @@ class Networking(threading.Thread):
                         else:
                             networkingLogger.warning("Unhandled message dropped")
                 else:
-                    self.send(data)
+                    if not self.send(data):
+                        readd.append(data)
+            [self._queue.put(data) for data in readd]
 
 class Client(Networking):
     def __init__(self, address):
         super().__init__(address)
         self._conn = None
+        self._tryReconnect = True
 
     def send(self, data):
-        asyncio.run_coroutine_threadsafe(self._conn.send(data), loop=self._eventLoop)
+        if self._conn and not self._conn.closed:
+            asyncio.run_coroutine_threadsafe(self._conn.send(data), loop=self._eventLoop)
+            return True
+        else:
+            return False
 
     def run(self):
         super().run()
-        self._server = self._eventLoop.run_until_complete(self._connect())
-        self._eventLoop.run_forever()
+        self._eventLoop.create_task(self._connect())
+        try:
+            self._eventLoop.run_forever()
+        finally:
+            self._eventLoop.close()
 
     def stop(self):
+        self._tryReconnect = False
         if self._conn is not None:
-            self._conn.close()
+            asyncio.run_coroutine_threadsafe(self._conn.close(), loop=self._eventLoop)
         return super().stop()
 
     async def _connect(self):
@@ -122,8 +141,18 @@ class Client(Networking):
                     data = await self._conn.recv()
                 except websockets.ConnectionClosedError:
                     break
-                #TODO Process received messages
+                header = message.Message.peekHeader(data)
+                if header:
+                    if header['channel'] == Channels.NETWORKING:
+                        if header['type'] == NetworkingTypes.ID_ASSIGN:
+                            self._id = header['destination']
+                    else:
+                        self.put(data)
+                else:
+                    networkingLogger.warning("Received malformed message")
             networkingLogger.warning("Client disconnected from server")
+        if self._tryReconnect:
+            asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
 
 class Server(Networking):
     def __init__(self, port):
@@ -151,7 +180,10 @@ class Server(Networking):
     def run(self):
         super().run()
         self._server = self._eventLoop.run_until_complete(websockets.server.serve(self._recNewConn, host=self._address[0], port=self._address[1]))
-        self._eventLoop.run_forever()
+        try:
+            self._eventLoop.run_forever()
+        finally:
+            self._eventLoop.close()
 
     def stop(self):
         if self._server is not None:
@@ -165,19 +197,17 @@ class Server(Networking):
             id = self.findUnusedId()
             self._clients[id] = conn
         idMessage = idAssignMessage.createMessage()
-        idMessage.setHeader(self._id, id, 0x00, 0x00)
+        idMessage.setHeader(self._id, id, 0x00, NetworkingTypes.ID_ASSIGN)
         self.send(idMessage.toJson())
         while not conn.closed:
             try:
-                print(3)
                 data = await conn.recv()
-                print("DATA RECIEVD")
-            except websockets.ConnectionClosedError:
+            except websockets.ConnectionClosed:
                 break
             header = message.Message.peekHeader(data)
             if header is not None:
                 if header['channel'] == Channels.NETWORKING:
-                    pass #TODO: assign ids and stuff
+                    pass #TODO stuff here
                 else:
                     self.put(data)
             else:
