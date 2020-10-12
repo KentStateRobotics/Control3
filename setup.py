@@ -14,8 +14,7 @@ setup(
     python_requires='==3.7.*',
     entry_points={
         'console_scripts':[
-            'KSRControl = KSRCore.entry.control:main',
-            'KSRRobot = KSRCore.entry.robot:main'
+            'KSRControl = KSRCore.entry:main',
         ]
     },
     cmdclass = {'build_ext': build_ext},

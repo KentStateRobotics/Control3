@@ -12,6 +12,7 @@ import multiprocessing
 import enum
 import KSRCore.message as message
 
+DEFAULT_PORT = 4242
 ROUTER_SLEEP = 0.05
 STOP_TIMEOUT = .2
 
@@ -19,17 +20,25 @@ networkingLogger = logging.getLogger("KSRC.Network")
 idAssignMessage = message.MessageFactory({})
 
 class NetworkIds(enum.IntEnum):
+    '''Reserved addresses'''
     LOCAL = 0
     HOST = 1
 
 class Channels(enum.IntEnum):
+    '''General channels'''
     NETWORKING = 0
     LOGGING = 1
 
 class NetworkingTypes(enum.IntEnum):
+    '''Message types for the networking channel'''
     ID_ASSIGN = 0
 
 class Networking(threading.Thread):
+    '''Base for networking server and client. Serves as interprocess router
+    Should not be instantiated directly, use Server or Client. 
+    Only one is needed per machine
+    Processes need to register a handler for receiving messages before forking
+    '''
     def __init__(self, address):
         super().__init__(name="Networking", daemon=True)
         self._id = None
@@ -42,6 +51,10 @@ class Networking(threading.Thread):
 
     @property
     def id(self):
+        '''Id of this router. 
+        Servers will always be 1.
+        Clients cannot send messages until an id is received from the server.
+        '''
         return self._id
 
     def send(self, data):
@@ -65,18 +78,29 @@ class Networking(threading.Thread):
         return True
 
     def addHandler(self, channel, handler):
+        '''Add a handler to handle messages on given channel
+        Args:
+            channel (int, 0-255): channel to receive on
+            handler (function(str/bytes)): callback receiving a bytes or string representaion of a Message
+        '''
         with self._handlerLock:
             self._handlers[channel] = handler
 
     def removeHandlers(self, channel=None):
+        '''Remove handler(s). If channel is not given remove all handlers
+        '''
         with self._handlerLock:
             if channel is None:
                 self._handlers.clear()
             else:
                 self._handlers.pop(channel, None)
 
-    def put(self, message):
-        self._queue.put(message)
+    def put(self, data):
+        '''Put the bytes or json representaion of a Message into the routing queue
+        Args:
+            data (bytes | str): bytes or json representaion of a Message
+        '''
+        self._queue.put(data)
 
     def run(self):
         self._eventLoop = asyncio.new_event_loop()
@@ -95,8 +119,6 @@ class Networking(threading.Thread):
                 if header['destination'] == 0 or header['destination'] == self._id:
                     with self._handlerLock:
                         handler = self._handlers.get(header['channel'])
-                        print(self._handlers)
-                        print(header['channel'])
                         if handler:
                             handler(data)
                         else:
@@ -107,12 +129,21 @@ class Networking(threading.Thread):
             [self._queue.put(data) for data in readd]
 
 class Client(Networking):
+    '''Connects to a server and serves as interprocess router.
+        Processes need to register a handler for receiving messages before forking
+    Args:
+        address ((str, int)): pair of address and port to connect to
+    '''
     def __init__(self, address):
         super().__init__(address)
         self._conn = None
         self._tryReconnect = True
 
     def send(self, data):
+        '''Send data over network to destintation of Message
+        Args:
+            data (bytes | str): bytes or json representation of a Message
+        '''
         if self._conn and not self._conn.closed:
             asyncio.run_coroutine_threadsafe(self._conn.send(data), loop=self._eventLoop)
             return True
@@ -128,6 +159,9 @@ class Client(Networking):
             self._eventLoop.close()
 
     def stop(self):
+        '''Stop the client, router, and router queue along with any threads.
+        Returns if all threads sucessfully closed
+        '''
         self._tryReconnect = False
         if self._conn is not None:
             asyncio.run_coroutine_threadsafe(self._conn.close(), loop=self._eventLoop)
@@ -155,6 +189,11 @@ class Client(Networking):
             asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
 
 class Server(Networking):
+    '''Host a server for clients and serves as interprocess and intermachines router.
+        Processes need to register a handler for receiving messages before forking
+    Args:
+        port (int): port to bind to
+    '''
     def __init__(self, port):
         super().__init__(('', port))
         self._id = NetworkIds.HOST.value
@@ -170,6 +209,10 @@ class Server(Networking):
         return None
 
     def send(self, data):
+        '''Send data over network to destintation of Message
+        Args:
+            data (bytes | str): bytes or json representation of a Message
+        '''
         header = message.Message.peekHeader(data)
         client = self._clients.get(header['destination'])
         if client is not None:
@@ -186,6 +229,9 @@ class Server(Networking):
             self._eventLoop.close()
 
     def stop(self):
+        '''Stop the server, router, and router queue along with any threads.
+        Returns if all threads sucessfully closed
+        '''
         if self._server is not None:
             self._server.close()
             for client in self._clients.values():
