@@ -1,7 +1,12 @@
 # KSRCore
 2021 Robot controller and remote manager\
 Python with C++ extensions\
-Must be compadable with Windows and Ubuntu on both AMD64 and ARM processors\
+
+## Design Goles:
+ - Compadable with Windows and Ubuntu on both AMD64 and ARM processors\
+ - Easy for inexperienced programemrs to start contributing
+ - Minimize setup complexity
+ - Reliable and testable
 
 # Setup
 Install python 3 https://www.python.org/downloads/\
@@ -21,7 +26,8 @@ python3 setup.py develop
 or
 python3 setup.py install
 ```
-Generate Documentation
+
+### Generate Documentation
 ```
 pdoc --html --output-dir docs KSRCore  
 ```
@@ -29,36 +35,24 @@ pdoc --html --output-dir docs KSRCore
 # Usage
 Remote control client/host:
 ```
-usage: control3 [-h] [-n NAME] [-c] [-p PORT] [-d DISCOVERY PORT] [-a HOST]
+usage: KSRControl [-h] [-r ROBOT] [-s Server] [-p PORT] [-a ADDRESS] [-l LOGFILE]
 optional arguments:
-  -h, --help         show this help message and exit
-  -n NAME            id used over network, first 10 characters must be unique, default: host
-  -c                 is this the network client, defaults to host
-  -p PORT            port to communicate over, default: 4242
-  -d DISCOVERY PORT  port to preform network discovery over, default: 4243
-  -a HOST            address to connect to host, or host name if discovery is
-                     being used
-```
-
-Robot controller:
-```
-usage: robot [-h] [-n NAME] [-p PORT] [-d DISCOVERY PORT] [-a HOST]
-optional arguments:
-  -h, --help         show this help message and exit
-  -n NAME            id used over network, first 10 characters must be unique, default: robot
-  -p PORT            port to communicate over, default: 4242
-  -d DISCOVERY PORT  port to preform network discovery over, default: 4243
-  -a HOST            address to connect to host, or host name if discovery is
-                     being used
+  -h, --help    show this help message and exit
+  -r ROBOT   Is this a robot? Defaults to controller
+  -s Server  Is this a server? Defaults to client
+  -p PORT       Port to communicate over, default: 4242
+  -a ADDRESS    Address to connect to host if discovery is not being used
+  -l LOGFILE   File to store logs in
 ```
 
 # Testing
-Automated unit tests are put in the control3/testes directory and should be named test____.py to be found by automatic test discovery. Use -b to suppress print statements, remove so see print statements
+Automated unit tests are put in the KSRCore/tests directory and should be named test_######.py to be found by automatic test discovery. Use -b to suppress print statements.
 ```
 pytest
 ```
+
 # Maintance
-New exteral library dependencies from PyPI must be added to requirements.txt and setup.py under install_requires
+New exteral library dependencies from PyPI must be added to requirements.txt
 
 # Extension
 Added new Cython modules or c extensions can be done by adding an extension to the setup.py file. Under ext_modules like so:
