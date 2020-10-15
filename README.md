@@ -2,7 +2,7 @@
 2021 Robot controller and remote manager\
 Python with C++ extensions\
 
-## Design Goles:
+### Design Goles:
  - Compadable with Windows and Ubuntu on both AMD64 and ARM processors\
  - Easy for inexperienced programemrs to start contributing
  - Minimize setup complexity
