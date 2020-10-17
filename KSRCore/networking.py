@@ -179,8 +179,8 @@ class Client(Networking):
                     break
                 header = message.Message.peekHeader(data)
                 if header:
-                    if header['channel'] == Channels.NETWORKING:
-                        if header['type'] == NetworkingTypes.ID_ASSIGN:
+                    if header['channel'] == Channels.NETWORKING.value:
+                        if header['type'] == NetworkingTypes.ID_ASSIGN.value:
                             self._id = header['destination']
                     else:
                         self.put(data)
@@ -249,7 +249,7 @@ class Server(Networking):
                 break
             header = message.Message.peekHeader(data)
             if header is not None:
-                if header['channel'] == Channels.NETWORKING:
+                if header['channel'] == Channels.NETWORKING.value:
                     pass #TODO stuff here
                 else:
                     self.put(data)
