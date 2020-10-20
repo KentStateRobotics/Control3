@@ -21,7 +21,7 @@ setup(
     ext_modules=[
     #    Extension("debugScripts.cythonExtentionTest", ["debugScripts/cythonExtentionTest.pyx"]),
     #    Extension("debugScripts.cExtentionTest", sources = ["debugScripts/cExtentionTest.cpp"])
-        Extension("KSRCore.slam.processing", sources = ["KSRCore/slam/processing.cpp"]),
-        Extension("KSRCore.slam.cMap", sources = ["KSRCore/slam/map2py.cpp", "KSRCore/slam/map.cpp"])
+    #    Extension("KSRCore.slam.processing", sources = ["KSRCore/slam/processing.cpp"]),
+    #    Extension("KSRCore.slam.cMap", sources = ["KSRCore/slam/map2py.cpp", "KSRCore/slam/map.cpp"])
     ]
 )
