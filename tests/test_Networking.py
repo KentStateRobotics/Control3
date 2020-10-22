@@ -92,3 +92,9 @@ def test_send_relay(createMessages):
     client.stop()
     client2.stop()
     server.stop()
+
+def test_discovery():
+    server = networking.Server(4569)
+    client = networking.Client(('', 4569))
+    assert not client.isConnected()
+    assert tests.wait(lambda: client.isConnected)

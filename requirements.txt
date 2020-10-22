@@ -6,3 +6,4 @@ Cython
 pyrealsense2
 pdoc3
 pytest
+selenium

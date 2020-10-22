@@ -10,7 +10,7 @@ def main():
     parser.add_argument('-r', action='store_true', help='Is this a robot? Defaults to controller')
     parser.add_argument('-s', action='store_true', help='Is this the server? Defaults to client')
     parser.add_argument('-d', help='If this is the server, directory for the http server to serve from')
-    parser.add_argument('-p', type=int, default=networking.DEFAULT_PORT, help='Port to communicate over, default: {}'.format(networking.DEFAULT_PORT))
+    parser.add_argument('-p', type=int, default=config.DEFAULT_PORT, help='Port to communicate over, default: {}'.format(config.DEFAULT_PORT))
     parser.add_argument('-a', type=str, help='Address to connect to host if discovery is not being used')
     parser.add_argument('-log_level', type=int, help="Logging filter level 10-debug, 20-default")
     parser.add_argument('-log_dir', type=str, help="File to store logs in")

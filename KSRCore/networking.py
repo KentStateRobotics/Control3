@@ -11,6 +11,8 @@ import threading
 import multiprocessing
 import enum
 import KSRCore.message as message
+import KSRCore.discovery as discovery
+import KSRCore.config as config
 
 DEFAULT_PORT = 4242
 ROUTER_SLEEP = 0.05
@@ -18,6 +20,7 @@ STOP_TIMEOUT = .2
 
 networkingLogger = logging.getLogger("KSRC.Network")
 idAssignMessage = message.MessageFactory({})
+connectToMessage = message.MessageFactory({'port': 'i', 'addresss': 'blob'})
 
 class NetworkIds(enum.IntEnum):
     '''Enum of reserved addresses'''
@@ -32,6 +35,7 @@ class Channels(enum.IntEnum):
 class NetworkingTypes(enum.IntEnum):
     '''Enum of message types for the networking channel'''
     ID_ASSIGN = 0
+    CONNECT_TO = 1
 
 class Networking(threading.Thread):
     '''Base for networking server and client. Serves as interprocess router
@@ -49,6 +53,8 @@ class Networking(threading.Thread):
         self._handlerLock = threading.Lock()
         self._address = address
         self._eventLoop = None
+        self._discovery = None
+        self.addHandler(Channels.NETWORKING.value, self.handleNetworkChannel)
         self.start()
 
     @property
@@ -116,6 +122,10 @@ class Networking(threading.Thread):
         asyncio.set_event_loop(self._eventLoop)
         self._eventLoop.create_task(self._runRouter())
 
+    def handleNetworkChannel(self, message: Union[bytes, str]):
+        '''Called by router on receiving a networking message, do not call directly'''
+        pass
+
     async def _runRouter(self):
         networkingLogger.debug("Starting handler thread")
         while True:
@@ -146,6 +156,7 @@ class Client(Networking):
         '''
         super().__init__(address)
         self._conn = None
+        self._discovery = discovery.Discovery(address[1] + 1)
         self._tryReconnect = True
 
     def send(self, data):
@@ -169,38 +180,55 @@ class Client(Networking):
             asyncio.run_coroutine_threadsafe(self._conn.close(), loop=self._eventLoop)
         return super().stop()
 
+    def handleNetworkChannel(self, message: Union[bytes, str]):
+        if header['type'] == NetworkingTypes.CONNECT_TO.value:
+            message = connectToMessage.loads(message)
+            self._address = (str(message['addresss']), message['port'])
+            if self._conn and not self._conn.closed:
+                asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
+
+    def isConnected(self) -> bool:
+        return not self._conn.closed if self._conn else False
+
     async def _connect(self):
-        async with websockets.connect(f'ws://{self._address[0]}:{self._address[1]}') as self._conn:
-            networkingLogger.debug("Client connected to server")
-            while not self._conn.closed:
-                try:
-                    data = await self._conn.recv()
-                except websockets.ConnectionClosedError:
-                    break
-                header = message.Message.peekHeader(data)
-                if header:
-                    if header['channel'] == Channels.NETWORKING.value:
-                        if header['type'] == NetworkingTypes.ID_ASSIGN.value:
+        if self._conn and not self.conn.closed:
+            await self._conn.close()
+        if not self._address[0]:
+            self._address[0] = self.self._discovery.find(config.DISCOVERY_ID, 5)
+        if self._address[0]:
+            async with websockets.connect(f'ws://{self._address[0]}:{self._address[1]}') as self._conn:
+                networkingLogger.debug("Client connected to server")
+                while not self._conn.closed:
+                    try:
+                        data = await self._conn.recv()
+                    except websockets.ConnectionClosedError:
+                        break
+                    header = message.Message.peekHeader(data)
+                    if header:
+                        if header['channel'] == Channels.NETWORKING.value and header['type'] == NetworkingTypes.ID_ASSIGN.value:
                             self._id = header['destination']
+                        else:
+                            self.put(data)
                     else:
-                        self.put(data)
-                else:
-                    networkingLogger.warning("Received malformed message")
-            networkingLogger.warning("Client disconnected from server")
-        if self._tryReconnect:
-            asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
+                        networkingLogger.warning("Received malformed message")
+                networkingLogger.warning("Client disconnected from server")
+            if self._tryReconnect:
+                asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
+        else:
+            networkingLogger.error(f'Could not connect to address {self._address[0]} or find using discovery')
 
 class Server(Networking):
     '''Host a server for clients and serves as interprocess and intermachines router.
         Processes need to register a handler for receiving messages before forking
     '''
-    def __init__(self, port):
+    def __init__(self, port: int):
         '''Bind to `port` and start hosting the server and run the router
         '''
         super().__init__(('', port))
         self._id = NetworkIds.HOST.value
         self._clients = {}
         self._clientsLock = threading.Lock()
+        self._discovery = discovery.Discovery(port + 1)
         self._server = None
 
     def findUnusedId(self) -> int:
@@ -222,6 +250,7 @@ class Server(Networking):
 
     def run(self):
         super().run()
+        self._eventLoop.create_task(self._discovery.echoAddress(config.DISCOVERY_ID, self._eventLoop))
         self._server = self._eventLoop.run_until_complete(websockets.server.serve(self._recNewConn, host=self._address[0], port=self._address[1]))
         try:
             self._eventLoop.run_forever()
@@ -234,6 +263,9 @@ class Server(Networking):
             for client in self._clients.values():
                 client.close()
         return super().stop()
+
+    def handleNetworkChannel(self, message: Union[bytes, str]):
+        pass
 
     async def _recNewConn(self, conn, url):
         with self._clientsLock:
@@ -249,10 +281,7 @@ class Server(Networking):
                 break
             header = message.Message.peekHeader(data)
             if header is not None:
-                if header['channel'] == Channels.NETWORKING.value:
-                    pass #TODO stuff here
-                else:
-                    self.put(data)
+                self.put(data)
             else:
                 networkingLogger.debug("Received malformed network message")
         networkingLogger.debug("Client disconnected from server")

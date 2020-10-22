@@ -5,9 +5,9 @@ KentStateRobotics Jared Butcher 7/29/2019
 import socket
 import asyncio
 import time
+import logging
 
-DEFAULT_PORT = 4242
-DEFAULT_DISCOVERY_PORT = 4243
+discoveryLogger = logging.getLogger('KSRC.Discovery')
 
 class Discovery:
     '''Used UTP broadcasts to find users running echoAddress
@@ -33,7 +33,6 @@ class Discovery:
                 sock.sendto(id, ('<broadcast>', self.port))
                 data, address = sock.recvfrom(1024)
                 while data != Discovery.RESPONSE:
-                    print(data)
                     address = None
                     data, address = sock.recvfrom(1024)
                 if not address is None:
@@ -42,10 +41,10 @@ class Discovery:
             except socket.timeout:
                 retries += 1
                 if retries >= tries:
-                    print("Failed to receive address from {} in {} atempts".format(id.decode("utf-8"), retries))
+                    discoveryLogger.warn("Failed to receive address from {} in {} atempts".format(id.decode("utf-8"), retries))
                     return None
                 else:
-                    print("Failed to receive address from {}, retrying".format(id.decode("utf-8")))
+                    discoveryLogger.debug("Failed to receive address from {}, retrying".format(id.decode("utf-8")))
 
     async def echoAddress(self, id, eventLoop):
         '''Run on server in event loop. Will pong pings for the id.
