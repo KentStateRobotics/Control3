@@ -1,32 +1,39 @@
 import http.server
 import functools
+import multiprocessing
 import threading
 import logging
+import time
+from typing import Optional
+import KSRCore.process
 
 logger = logging.getLogger('KSRC.http')
 
-class HttpServer(threading.Thread):
-    def __init__(self, httpDir, port=80, logLevel=40):
-        super().__init__(daemon=True)
+class HttpServer(KSRCore.process.Process):
+    def __init__(self, routerQueue: 'multiprocessing.Queue', httpDir: str, port: Optional[int] = 80):
+        '''Create and start the simple http server
+
+            `httpDir` is the directory to serve files from
+        '''
+        super().__init__(routerQueue, daemon=True, name="HTTP")
         self.httpServer = None
         self._port = port
         self._httpDir = httpDir
-        self._logLevel=logLevel if logLevel else 40
         self.start()
 
     def run(self):
+        super().run()
+        checkStopThread = threading.Thread(daemon=True, target=self.checkStop)
+        checkStopThread.start()
         self.httpServer = http.server.HTTPServer(('', self._port), functools.partial(SimplerHandler, directory=self._httpDir))
         self.httpServer.serve_forever()
 
-    def stop(self):
-        shutdownThread = threading.Thread(target=self.httpServer.shutdown, daemon=True)
-        shutdownThread.start()
-        shutdownThread.join(.2)
-        self.join(.1)
-        if self.is_alive:
-            logger.warning("Http server thread failed to close")
-            return False
-        return True
+    def checkStop(self):
+        while True:
+            time.sleep(.1)
+            if self._stopEvent.is_set():
+                self.httpServer.shutdown()
+                return
 
 class SimplerHandler(http.server.SimpleHTTPRequestHandler):
     def log_error(self, *args):

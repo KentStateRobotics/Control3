@@ -161,3 +161,25 @@ def test_peek_header_JSON(testMessages):
     data = testMessages['filledTestMsg'].toJson()
     assert Message.peekHeader(data) == testMessages['filledTestMsg']['header']
     
+def test_p_string():
+    testMsgFact = MessageFactory({'a': '255p', 'c': 'i', 'b': '16p'})
+    testInst = testMsgFact.createMessage({'a': b'This is a string', 'c': 56, 'b': b'bytes'})
+    testInst.setHeader(0,0,0,0)
+    data = testInst.toStruct()
+    recovered = testMsgFact.loads(data)
+    assert recovered['a'] == b"This is a string"
+    assert recovered['b'] == b'bytes'
+    assert recovered['c'] == 56
+
+def test_message_setSource(testMessages):
+    msg = testMessages['filledTestMsg']
+    data = msg.toStruct()
+    data = Message.setSource(data, 0x11)
+    out = testMessages['testMsg'].loads(data)
+    assert out['header']['destination'] == msg['header']['destination']
+    assert out['header']['source'] == 0x11
+    data = msg.toJson()
+    data = Message.setSource(data, 0x12)
+    out = testMessages['testMsg'].loads(data)
+    assert out['header']['destination'] == msg['header']['destination']
+    assert out['header']['source'] == 0x12

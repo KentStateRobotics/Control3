@@ -2,7 +2,7 @@ websockets
 pyserial
 numpy
 opencv-contrib-python
-Cython
+cython
 pyrealsense2
 pdoc3
 pytest

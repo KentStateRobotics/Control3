@@ -4,12 +4,13 @@ KentStateRobotics Jared Butcher 10/5/2020
 Interprocess router packaged in either a websocket client or server. 
 '''
 import logging
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 import websockets
 import asyncio
 import threading
 import multiprocessing
 import enum
+import copy
 import KSRCore.message as message
 import KSRCore.discovery as discovery
 import KSRCore.config as config
@@ -19,8 +20,8 @@ ROUTER_SLEEP = 0.05
 STOP_TIMEOUT = .2
 
 networkingLogger = logging.getLogger("KSRC.Network")
-idAssignMessage = message.MessageFactory({})
 connectToMessage = message.MessageFactory({'port': 'i', 'addresss': 'blob'})
+logMessage = message.MessageFactory({'level': 'i', 'name': '32p', 'message': 'blob'})
 
 class NetworkIds(enum.IntEnum):
     '''Enum of reserved addresses'''
@@ -30,12 +31,12 @@ class NetworkIds(enum.IntEnum):
 class Channels(enum.IntEnum):
     '''Enum of general channels'''
     NETWORKING = 0
-    LOGGING = 1
 
 class NetworkingTypes(enum.IntEnum):
     '''Enum of message types for the networking channel'''
     ID_ASSIGN = 0
     CONNECT_TO = 1
+    LOG = 2
 
 class Networking(threading.Thread):
     '''Base for networking server and client. Serves as interprocess router
@@ -43,7 +44,7 @@ class Networking(threading.Thread):
         Only one is needed per machine
         Processes need to register a handler for receiving messages before forking
     '''
-    def __init__(self, address):
+    def __init__(self, address, retryTimeout: Optional[int] = 1):
         '''Instanciation tarts queue, rotuer, and thread
         '''
         super().__init__(name="Networking", daemon=True)
@@ -54,6 +55,8 @@ class Networking(threading.Thread):
         self._address = address
         self._eventLoop = None
         self._discovery = None
+        self._retryCounter = 0
+        self._retryTimeout = retryTimeout
         self.addHandler(Channels.NETWORKING.value, self.handleNetworkChannel)
         self.start()
 
@@ -64,6 +67,10 @@ class Networking(threading.Thread):
             Clients cannot send messages until an id is received from the server.
         '''
         return self._id
+
+    @property
+    def queue(self) -> 'multiprocessing.Queue':
+        return self._queue
 
     def send(self, data: Union[bytes, str]):
         '''Send data over network to destintation of Message
@@ -92,7 +99,7 @@ class Networking(threading.Thread):
             return False
         return True
 
-    def addHandler(self, channel: int, handler: Callable[[Union[bytes, str]], None]):
+    def addHandler(self, channel: int, handler: Callable[['KSRCore.message.Message', Union[bytes, str]], None]):
         '''Add a handler to handle messages on given channel
 
             `channel` 0-255 channel to receive on
@@ -122,7 +129,7 @@ class Networking(threading.Thread):
         asyncio.set_event_loop(self._eventLoop)
         self._eventLoop.create_task(self._runRouter())
 
-    def handleNetworkChannel(self, message: Union[bytes, str]):
+    def handleNetworkChannel(self, header: 'KSRCore.message.Message', message: Union[bytes, str]):
         '''Called by router on receiving a networking message, do not call directly'''
         pass
 
@@ -139,10 +146,12 @@ class Networking(threading.Thread):
                     with self._handlerLock:
                         handler = self._handlers.get(header['channel'])
                         if handler:
-                            handler(data)
+                            handler(header, data)
                         else:
                             networkingLogger.warning("Unhandled message dropped")
                 else:
+                    if header['source'] == 0:
+                        message.Message.setSource(data, self.id)
                     if not self.send(data):
                         readd.append(data)
             [self._queue.put(data) for data in readd]
@@ -150,20 +159,25 @@ class Networking(threading.Thread):
 class Client(Networking):
     '''Connects to a server and serves as interprocess router.
         Processes need to register a handler for receiving messages before forking
+        Also attaches a remote logger to log back to the server
     '''
-    def __init__(self, address: (str, int)):
+    def __init__(self, address: (str, int), retryTimeout=1):
         '''`address` is a pair of host address and port number
         '''
-        super().__init__(address)
+        super().__init__(address, retryTimeout)
         self._conn = None
         self._discovery = discovery.Discovery(address[1] + 1)
         self._tryReconnect = True
+        self._remoteLogHandler = None
 
     def send(self, data):
-        if self._conn and not self._conn.closed:
+        if self._retryCounter > self._retryTimeout and (not self._conn or self._conn.closed):
+            return True
+        elif self._conn and not self._conn.closed:
             asyncio.run_coroutine_threadsafe(self._conn.send(data), loop=self._eventLoop)
             return True
         else:
+            self._retryCounter += ROUTER_SLEEP
             return False
 
     def run(self):
@@ -180,12 +194,16 @@ class Client(Networking):
             asyncio.run_coroutine_threadsafe(self._conn.close(), loop=self._eventLoop)
         return super().stop()
 
-    def handleNetworkChannel(self, message: Union[bytes, str]):
+    def handleNetworkChannel(self, header, message: Union[bytes, str]):
         if header['type'] == NetworkingTypes.CONNECT_TO.value:
             message = connectToMessage.loads(message)
             self._address = (str(message['addresss']), message['port'])
             if self._conn and not self._conn.closed:
                 asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
+        elif header['type'] == NetworkingTypes.LOG.value:
+            message = logMessage.loads(message)
+            logger = logging.getLogger(message['name'].decode('utf-8'))
+            logger.log(message['level'], message['message'].decode('utf-8'))
 
     def isConnected(self) -> bool:
         return not self._conn.closed if self._conn else False
@@ -194,9 +212,11 @@ class Client(Networking):
         if self._conn and not self.conn.closed:
             await self._conn.close()
         if not self._address[0]:
-            self._address[0] = self.self._discovery.find(config.DISCOVERY_ID, 5)
+            self._address = (self._discovery.find(config.DISCOVERY_ID, 5), self._address[1])
         if self._address[0]:
             async with websockets.connect(f'ws://{self._address[0]}:{self._address[1]}') as self._conn:
+                self._retryCounter = 0
+                self._remoteLogHandler = RemoteLoggingHandler.attachHandler(self.queue)
                 networkingLogger.debug("Client connected to server")
                 while not self._conn.closed:
                     try:
@@ -213,6 +233,8 @@ class Client(Networking):
                         networkingLogger.warning("Received malformed message")
                 networkingLogger.warning("Client disconnected from server")
             if self._tryReconnect:
+                if self._remoteLogHandler:
+                    logging.getLogger().removeHandler(self._remoteLogHandler)
                 asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
         else:
             networkingLogger.error(f'Could not connect to address {self._address[0]} or find using discovery')
@@ -221,10 +243,10 @@ class Server(Networking):
     '''Host a server for clients and serves as interprocess and intermachines router.
         Processes need to register a handler for receiving messages before forking
     '''
-    def __init__(self, port: int):
+    def __init__(self, port: int, retryTimeout=1):
         '''Bind to `port` and start hosting the server and run the router
         '''
-        super().__init__(('', port))
+        super().__init__(('', port),retryTimeout)
         self._id = NetworkIds.HOST.value
         self._clients = {}
         self._clientsLock = threading.Lock()
@@ -245,8 +267,7 @@ class Server(Networking):
         client = self._clients.get(header['destination'])
         if client is not None:
             asyncio.run_coroutine_threadsafe(client.send(data), loop=self._eventLoop)
-        else:
-            networkingLogger.warning("Client doesn't exist")
+        return True
 
     def run(self):
         super().run()
@@ -264,15 +285,18 @@ class Server(Networking):
                 client.close()
         return super().stop()
 
-    def handleNetworkChannel(self, message: Union[bytes, str]):
-        pass
+    def handleNetworkChannel(self, header, message: Union[bytes, str]):
+        if header['type'] == NetworkingTypes.LOG.value:
+            message = logMessage.loads(message)
+            logger = logging.getLogger(message['name'].decode('utf-8'))
+            logger.log(message['level'], message['message'].decode('utf-8'))
 
     async def _recNewConn(self, conn, url):
         with self._clientsLock:
             id = self.findUnusedId()
             self._clients[id] = conn
-        idMessage = idAssignMessage.createMessage()
-        idMessage.setHeader(self._id, id, 0x00, NetworkingTypes.ID_ASSIGN)
+        idMessage = message.justHeaderMessage.createMessage()
+        idMessage.setHeader(self._id, id, 0x00, NetworkingTypes.ID_ASSIGN.value)
         self.send(idMessage.toJson())
         while not conn.closed:
             try:
@@ -288,3 +312,44 @@ class Server(Networking):
         with self._clientsLock:
             self._clients.pop(id)
 
+class RemoteLoggingHandler(logging.Handler):
+    """
+    This handler packs events into a logging message and sends them to the routing queue
+    """
+
+    @staticmethod
+    def attachHandler(routerQueue: 'multiprocessing.Queue') -> 'KSRCore.networking.RemoteLoggingHandler':
+        '''Attach this handler to the current logger
+        '''
+        rootLogger = logging.getLogger()
+        remoteFormat = logging.Formatter('%(message)s')
+        handler = RemoteLoggingHandler(routerQueue)
+        rootLogger.addHandler(handler)
+        return handler
+
+    def __init__(self, routerQueue: 'multiprocessing.Queue'):
+        logging.Handler.__init__(self)
+        self.routerQueue = routerQueue
+
+    def enqueue(self, record):
+        msg = logMessage.createMessage({'level': record.levelno, 'name': record.name.encode('utf-8'), 'message': record.msg})
+        msg.setHeader(0, 1, Channels.NETWORKING.value, NetworkingTypes.LOG.value)
+        self.routerQueue.put(msg.toStruct())
+
+
+    def prepare(self, record):
+        msg = self.format(record)
+        # bpo-35726: make copy of record to avoid affecting other handlers in the chain.
+        record = copy.copy(record)
+        record.message = msg
+        record.msg = msg
+        record.args = None
+        record.exc_info = None
+        record.exc_text = None
+        return record
+
+    def emit(self, record):
+        try:
+            self.enqueue(self.prepare(record))
+        except Exception:
+            self.handleError(record)

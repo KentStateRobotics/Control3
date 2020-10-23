@@ -80,7 +80,8 @@ class MessageFactory:
         try:
             data += self.struct.pack(*structValues)
         except struct.error as e:
-            MessageLogger.error("Error occured while packing: " + str(structValues) + " Into: " + str(self.definition))
+            MessageLogger.error("Error occured while packing: " + str(structValues) + " Into: " + str(self.definition) + " " + str(e))
+            print(e)
             raise e
         for key in self.messageKeys:
             data += self.definition[key]._pack(values[key], topLevel=False)
@@ -193,11 +194,26 @@ class Message(UserDict):
     def setHeader(self, source: int, destination: int, channel: int, messageType: int):
         '''A shortcut for setting header values. All are ints in range 0-255.
         '''
+        if 0 > source > 255 or 0 > destination > 255 or 0 > channel > 255 or 0 > messageType > 255:
+            raise Exception(f'Incorrect Header values used in setHeader {source} {destination} {channel} {messageType}')
         self['header'] = {}
         self['header']['source'] = source
         self['header']['destination'] = destination
         self['header']['channel'] = channel
         self['header']['type'] = messageType
+
+    @staticmethod
+    def setSource(data: Union[bytes, str], source: int) -> Union[bytes, str]:
+        '''Change the source of a PREPACKED struct or json message.
+        '''
+        if data[0] == ord('s'):
+            header = justHeaderMessage.loads(data)
+            header['header']['source'] = source
+            return header.toStruct() + data[6:]
+        elif data[0] == '{':
+            msg = json.loads(data)
+            msg['header']['source'] = source
+            return json.dumps(msg, cls=Message.JSONBytesEncoder)
 
     @staticmethod
     def peekHeader(data: Union[bytes, str]) -> 'Message':
@@ -214,3 +230,5 @@ MessageFactory._Header = MessageFactory({
     'channel': 'B',
     'type': 'B'
 }, includeHeader=False)
+
+justHeaderMessage = MessageFactory({})
