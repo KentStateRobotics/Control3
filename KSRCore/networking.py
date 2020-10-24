@@ -12,6 +12,7 @@ import multiprocessing
 import enum
 import copy
 import KSRCore.message as message
+import KSRCore.logging
 import KSRCore.discovery as discovery
 import KSRCore.config as config
 
@@ -19,7 +20,7 @@ DEFAULT_PORT = 4242
 ROUTER_SLEEP = 0.05
 STOP_TIMEOUT = .2
 
-networkingLogger = logging.getLogger("KSRC.Network")
+networkingLogger = logging.getLogger(KSRCore.logging.BASE_LOGGER + '.Network')
 connectToMessage = message.MessageFactory({'port': 'i', 'addresss': 'blob'})
 logMessage = message.MessageFactory({'level': 'i', 'name': '32p', 'message': 'blob'})
 
@@ -172,6 +173,7 @@ class Client(Networking):
 
     def send(self, data):
         if self._retryCounter > self._retryTimeout and (not self._conn or self._conn.closed):
+            networkingLogger.error("Message send timeout expired")
             return True
         elif self._conn and not self._conn.closed:
             asyncio.run_coroutine_threadsafe(self._conn.send(data), loop=self._eventLoop)
@@ -216,7 +218,7 @@ class Client(Networking):
         if self._address[0]:
             async with websockets.connect(f'ws://{self._address[0]}:{self._address[1]}') as self._conn:
                 self._retryCounter = 0
-                self._remoteLogHandler = RemoteLoggingHandler.attachHandler(self.queue)
+                KSRCore.logging.addRemoteHandler(self.queue)
                 networkingLogger.debug("Client connected to server")
                 while not self._conn.closed:
                     try:
@@ -311,45 +313,3 @@ class Server(Networking):
         networkingLogger.debug("Client disconnected from server")
         with self._clientsLock:
             self._clients.pop(id)
-
-class RemoteLoggingHandler(logging.Handler):
-    """
-    This handler packs events into a logging message and sends them to the routing queue
-    """
-
-    @staticmethod
-    def attachHandler(routerQueue: 'multiprocessing.Queue') -> 'KSRCore.networking.RemoteLoggingHandler':
-        '''Attach this handler to the current logger
-        '''
-        rootLogger = logging.getLogger()
-        remoteFormat = logging.Formatter('%(message)s')
-        handler = RemoteLoggingHandler(routerQueue)
-        rootLogger.addHandler(handler)
-        return handler
-
-    def __init__(self, routerQueue: 'multiprocessing.Queue'):
-        logging.Handler.__init__(self)
-        self.routerQueue = routerQueue
-
-    def enqueue(self, record):
-        msg = logMessage.createMessage({'level': record.levelno, 'name': record.name.encode('utf-8'), 'message': record.msg})
-        msg.setHeader(0, 1, Channels.NETWORKING.value, NetworkingTypes.LOG.value)
-        self.routerQueue.put(msg.toStruct())
-
-
-    def prepare(self, record):
-        msg = self.format(record)
-        # bpo-35726: make copy of record to avoid affecting other handlers in the chain.
-        record = copy.copy(record)
-        record.message = msg
-        record.msg = msg
-        record.args = None
-        record.exc_info = None
-        record.exc_text = None
-        return record
-
-    def emit(self, record):
-        try:
-            self.enqueue(self.prepare(record))
-        except Exception:
-            self.handleError(record)

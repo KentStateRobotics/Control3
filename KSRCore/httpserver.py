@@ -6,8 +6,9 @@ import logging
 import time
 from typing import Optional
 import KSRCore.process
+import KSRCore.logging
 
-logger = logging.getLogger('KSRC.http')
+logger = logging.getLogger(KSRCore.logging.REMOTE_LOGGER + '.http')
 
 class HttpServer(KSRCore.process.Process):
     def __init__(self, routerQueue: 'multiprocessing.Queue', httpDir: str, port: Optional[int] = 80):

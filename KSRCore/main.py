@@ -5,6 +5,7 @@ import KSRCore.networking as networking
 import KSRCore.message as message
 import KSRCore.config as config
 import KSRCore.httpserver as httpserver
+import KSRCore.logging
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Kent State Robotics Controler")
@@ -18,8 +19,8 @@ def main(argv=None):
     args = parser.parse_args(argv if argv else sys.argv[1:])
 
     config.initLogging(args.log_level, args.log_dir)
-    logger = logging.getLogger("KSRC.Main")
-    logger.info("Starting")
+    logger = logging.getLogger(KSRCore.logging.BASE_LOGGER + '.Main')
+    logger.info("Starting KSRC")
 
     router = None
     httpServer = None

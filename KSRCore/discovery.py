@@ -6,8 +6,9 @@ import socket
 import asyncio
 import time
 import logging
+import KSRCore.logging
 
-discoveryLogger = logging.getLogger('KSRC.Discovery')
+discoveryLogger = logging.getLogger(KSRCore.logging.BASE_LOGGER + '.Discovery')
 
 class Discovery:
     '''Used UTP broadcasts to find users running echoAddress
