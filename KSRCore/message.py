@@ -31,9 +31,8 @@ from collections import UserDict
 import enum
 import json
 import logging
-import KSRCore.logging
 
-MessageLogger = logging.getLogger(KSRCore.logging.BASE_LOGGER + ".Message")
+MessageLogger = logging.getLogger("Message")
 
 class MessageFactory:
     '''Used to define messages that can be converted to and from bytes for exchange.

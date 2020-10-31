@@ -18,10 +18,6 @@ def main(argv=None):
     parser.add_argument('-log_dir', type=str, help="File to store logs in")
     args = parser.parse_args(argv if argv else sys.argv[1:])
 
-    config.initLogging(args.log_level, args.log_dir)
-    logger = logging.getLogger(KSRCore.logging.BASE_LOGGER + '.Main')
-    logger.info("Starting KSRC")
-
     router = None
     httpServer = None
     #Start services depending on whether this is the server or not
@@ -31,11 +27,15 @@ def main(argv=None):
             httpDir = 'KSRWebGUI/src/'
         else:
             httpDir = args.d
-        logger.info("Initalizing Server")
         router = networking.Server(args.p)
         httpServer = httpserver.HttpServer(router.queue, httpDir)
     else:
         router = networking.Client((args.a, args.p))
+
+    #Init logging
+    KSRCore.logging.initLogging(router.queue, args.log_level, args.log_dir)
+    logger = logging.getLogger('Main')
+    logger.info("Starting KSRC")
 
     #Start services depending on whether this is a robot or not
     if args.r:

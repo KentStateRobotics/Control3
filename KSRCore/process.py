@@ -3,7 +3,7 @@ import logging
 import KSRCore.networking
 import KSRCore.logging
 
-processLogger = logging.getLogger(KSRCore.logging.REMOTE_LOGGER + '.Process')
+processLogger = logging.getLogger('Process')
 
 class Process(multiprocessing.Process):
     """Like the normal process, but setups the logger to pass logs to the main process.
@@ -18,7 +18,7 @@ class Process(multiprocessing.Process):
     def run(self):
         '''Must call in inherited class
         '''
-        KSRCore.logging.addRemoteHandler(self.routerQueue)
+        KSRCore.logging.initProcessLogging(self.routerQueue)
 
     def stop(self):
         self._stopEvent.set()

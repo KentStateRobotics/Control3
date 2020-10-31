@@ -1,29 +1,34 @@
 from typing import Optional
 import logging
 import sys
+import copy
+import KSRCore.networking as networking
 
-BASE_LOGGER = 'KSRC'
-REMOTE_LOGGER = 'REMOTE'
+SHORT_FORMAT = logging.Formatter('%(message)s')
+LONG_FORMAT = logging.Formatter('%(asctime)s|%(name)-16s|%(levelname)-8s|%(processName)-8s|%(message)s')
 
-def addBaseHandlers(level: Optional[int] = 20, filepath: Optional[str] = None):
-    detailedFormat = logging.Formatter('%(asctime)s|%(name)-16s|%(levelname)-8s|%(message)s')
-    logger = logging.getLogger(BASE_LOGGER)
-    logger.setLevel(level if level else 20)
+def initLogging(routerQueue: 'multiprocessing.Queue', level: Optional[int] = 20, filepath: Optional[str] = None):
+    networking.localLogger.propagate = False
+    networking.localLogger.setLevel(level if level else 20)
     stdHandler = logging.StreamHandler(stream=sys.stdout)
-    stdHandler.setFormatter(detailedFormat)
-    logger.addHandler(stdHandler)
+    stdHandler.setFormatter(SHORT_FORMAT)
+    networking.localLogger.addHandler(stdHandler)
+    forceFormatHandler = ForceFormatHandler()
+    forceFormatHandler.setFormatter(LONG_FORMAT)
+    networking.networkingLogger.addHandler(forceFormatHandler)
+    networking.networkingLogger.setLevel(level if level else 20)
     if not filepath is None:
         fileHandler = logging.FileHandler(filepath)
-        fileHandler.setFormatter(detailedFormat)
+        fileHandler.setFormatter(SHORT_FORMAT)
         logger.addHandler(fileHandler)
+    initProcessLogging(routerQueue, level)
 
-
-def addRemoteHandler(routerQueue: 'multiprocessing.Queue') -> 'KSRCore.networking.RemoteLoggingHandler':
-    logger = logging.getLogger(REMOTE_LOGGER)
-    remoteFormat = logging.Formatter('%(message)s')
-    handler = RemoteLoggingHandler(routerQueue)
-    logger.addHandler(handler)
-
+def initProcessLogging(routerQueue: 'multiprocessing.Queue', level: Optional[int] = 0):
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(level if level else 20)
+    remoteHandler = RemoteLoggingHandler(routerQueue)
+    remoteHandler.setFormatter(LONG_FORMAT)
+    rootLogger.addHandler(remoteHandler)
 
 class RemoteLoggingHandler(logging.Handler):
     """
@@ -35,10 +40,9 @@ class RemoteLoggingHandler(logging.Handler):
         self.routerQueue = routerQueue
 
     def enqueue(self, record):
-        msg = logMessage.createMessage({'level': record.levelno, 'name': record.name.encode('utf-8'), 'message': record.msg})
-        msg.setHeader(0, 1, Channels.NETWORKING.value, NetworkingTypes.LOG.value)
-        self.routerQueue.put(msg.toStruct())
-
+        msg = networking.logMessage.createMessage({'level': record.levelno, 'message': record.msg})
+        msg.setHeader(0, 1, networking.Channels.NETWORKING.value, networking.NetworkingTypes.LOG.value)
+        self.routerQueue.put(msg.toJson())
 
     def prepare(self, record):
         msg = self.format(record)
@@ -56,3 +60,13 @@ class RemoteLoggingHandler(logging.Handler):
             self.enqueue(self.prepare(record))
         except Exception:
             self.handleError(record)
+
+class ForceFormatHandler(logging.Handler):
+    def emit(self, record):
+        if self.format:
+            msg = self.format(record)
+            record.message = msg
+            record.msg = msg
+            record.args = None
+            record.exc_info = None
+            record.exc_text = None

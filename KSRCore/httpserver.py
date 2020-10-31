@@ -8,7 +8,7 @@ from typing import Optional
 import KSRCore.process
 import KSRCore.logging
 
-logger = logging.getLogger(KSRCore.logging.REMOTE_LOGGER + '.http')
+logger = logging.getLogger('http')
 
 class HttpServer(KSRCore.process.Process):
     def __init__(self, routerQueue: 'multiprocessing.Queue', httpDir: str, port: Optional[int] = 80):
@@ -37,6 +37,12 @@ class HttpServer(KSRCore.process.Process):
                 return
 
 class SimplerHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.extensions_map.update({
+            '.js': 'application/javascript'
+        })
+
     def log_error(self, *args):
         logger.error(*args)
 

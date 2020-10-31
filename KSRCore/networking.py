@@ -12,7 +12,6 @@ import multiprocessing
 import enum
 import copy
 import KSRCore.message as message
-import KSRCore.logging
 import KSRCore.discovery as discovery
 import KSRCore.config as config
 
@@ -20,9 +19,10 @@ DEFAULT_PORT = 4242
 ROUTER_SLEEP = 0.05
 STOP_TIMEOUT = .2
 
-networkingLogger = logging.getLogger(KSRCore.logging.BASE_LOGGER + '.Network')
+localLogger = logging.getLogger('local')
+networkingLogger = logging.getLogger('local.network')
 connectToMessage = message.MessageFactory({'port': 'i', 'addresss': 'blob'})
-logMessage = message.MessageFactory({'level': 'i', 'name': '32p', 'message': 'blob'})
+logMessage = message.MessageFactory({'level': 'i', 'message': 'blob'})
 
 class NetworkIds(enum.IntEnum):
     '''Enum of reserved addresses'''
@@ -204,8 +204,7 @@ class Client(Networking):
                 asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
         elif header['type'] == NetworkingTypes.LOG.value:
             message = logMessage.loads(message)
-            logger = logging.getLogger(message['name'].decode('utf-8'))
-            logger.log(message['level'], message['message'].decode('utf-8'))
+            localLogger.log(message['level'], message['message'])
 
     def isConnected(self) -> bool:
         return not self._conn.closed if self._conn else False
@@ -218,7 +217,6 @@ class Client(Networking):
         if self._address[0]:
             async with websockets.connect(f'ws://{self._address[0]}:{self._address[1]}') as self._conn:
                 self._retryCounter = 0
-                KSRCore.logging.addRemoteHandler(self.queue)
                 networkingLogger.debug("Client connected to server")
                 while not self._conn.closed:
                     try:
@@ -235,8 +233,6 @@ class Client(Networking):
                         networkingLogger.warning("Received malformed message")
                 networkingLogger.warning("Client disconnected from server")
             if self._tryReconnect:
-                if self._remoteLogHandler:
-                    logging.getLogger().removeHandler(self._remoteLogHandler)
                 asyncio.run_coroutine_threadsafe(self._connect(), loop=self._eventLoop)
         else:
             networkingLogger.error(f'Could not connect to address {self._address[0]} or find using discovery')
@@ -290,8 +286,7 @@ class Server(Networking):
     def handleNetworkChannel(self, header, message: Union[bytes, str]):
         if header['type'] == NetworkingTypes.LOG.value:
             message = logMessage.loads(message)
-            logger = logging.getLogger(message['name'].decode('utf-8'))
-            logger.log(message['level'], message['message'].decode('utf-8'))
+            localLogger.log(message['level'], message['message'])
 
     async def _recNewConn(self, conn, url):
         with self._clientsLock:
