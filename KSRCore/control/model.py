@@ -1,71 +1,33 @@
-import numpy as np
+import typing
+import scipy.spatial.transform as transform
 
-class Component:
+class CollisionObject:
+    def collides(self, object) -> bool:
+        raise NotImplementedError("Not implemented")
 
-    componentNameMap = {}
+class Cube(CollisionObject):
+    def __init__(self, size: typing.Tuple[float, float, float], origin : typing.Tuple[float, float, float], roation: typing.Tuple[float, float, float]):
+        self.orgin = origin 
+        self.size = size
+        self.rot = transform.Rotation.from_euler('xyz', rotation, degrees=True)
 
-    @staticmethod
-    def createComponet(config: dict):
-        return Component.componentNameMap[config['type']](config)
+class Point(CollisionObject):
+    def __init__(self, origin : typing.Tuple[float, float, float]):
+        self.origin = origin 
 
-    def __init__(self, config: dict, parent: 'KSRCore.control.model.Component' = None):
-        self._config = config
-        self.parent = parent
-        self.defaultRot = np.array(self._config['rot'])
-        self.defaultPos = np.array(self._config['pos'])
-        self.rot = self.defaultRot
-        self.pos = self.defaultPos
-        self.children = []
-        if 'children' in self._config:
-            for child in self._config['children']:
-                self.children.append(Component.createComponet(child))
+class Plane(CollisionObject):
+    def __init__(self, size: typing.Tuple[float, float], origin : typing.Tuple[float, float, float], roation: typing.Tuple[float, float, float]):
+        self.origin = origin 
+        self.size = size
+        self.rot = transform.Rotation.from_euler('xyz', rotation, degrees=True)
 
-    @property
-    def isRoot(self):
-        return self.parent is None
+class Sphere(CollisionObject):
+    def __init__(self, size: float, origin : typing.Tuple[float, float, float]):
+        self.orgin = origin 
+        self.size = size
 
-    @property
-    def getAbsRotation(self):
-        pass
-
-    @property
-    def getAbsPosition(self):
-        pass
-
-
-class Joint(Component):
-    def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
-        super().__init__(config, parent)
-        self.minRot = None
-        self.maxRot = None
-
-    def rotate(self, rotation):
-        pass
-
-    def setRotation(self, rotation):
-        pass
-        
-class Actuator(Component)
-    def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
-        super().__init__(config, parent)
-        self.minPos = None
-        self.maxPos = None
-
-    def move(self, offset):
-        pass
-
-    def setPosition(self, position):
-        pass
-
-
-class Motor(Joint):
-    def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
-        super().__init__(config)
-
-
-Component.componentNameMap = {
-    'component': Component,
-    'structure': Structure
-    'joint': Joint,
-    'motor': Motor
-    }
+class Cylinder(CollisionObject):
+    def __init__(self, size: typing.Tuple[float, float], origin : typing.Tuple[float, float, float], roation: typing.Tuple[float, float, float]):
+        self.orgin = origin 
+        self.size = size
+        self.rot = transform.Rotation.from_euler('xyz', rotation, degrees=True)
