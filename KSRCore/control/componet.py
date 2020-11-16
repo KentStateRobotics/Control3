@@ -11,16 +11,15 @@ class Component:
         return Component.componentNameMap[config['type']](config)
 
     def __init__(self, config: dict, parent: 'KSRCore.control.model.Component' = None):
-        self._config = config
+        self.config = config
+        self.name = config['name']
         self.parent = parent
-        self.defaultRot = transform.Rotation.from_euler('xyz', self._config['rot'], degrees=True)
-        self.defaultPos = np.array(self._config['pos'])
-        self.rot = self.defaultRot
-        self.pos = self.defaultPos
+        self.defaultRotation = transform.Rotation.from_euler('xyz', config['rotation'], degrees=True)
+        self.defaultPosition = np.array(config['position'])
+        self.rotation = self.defaultRot
+        self.position = self.defaultPos
+        self.visualModels = []
         self.colisionModels = []
-        self.limits = None
-        if 'limits' in self._config:
-            self.limits = (transform.Rotation.from_euler('xyz', self._config['limits'][0], degrees=True), transform.Rotation.from_euler('xyz', self._config['limits'][1], degrees=True))
         self.children = []
         if 'children' in self._config:
             for child in self._config['children']:
@@ -33,9 +32,9 @@ class Component:
     @property
     def absRotation(self) -> 'scipy.spatial.transform.Rotation':
         if self.parent is None:
-            return self.rot
+            return self.rotation
         else:
-            return self.rot * self.parent.absRotation
+            return self.rotation * self.parent.absRotation
 
     @property
     def absPosition(self) -> 'numpy.array':
@@ -44,14 +43,26 @@ class Component:
         else:
             return np.add(self.rot.apply(self.pos), self.parent.absPosition)
 
-    def setRotation(self, rotation):
-        self.rot = rotation
+class Joint(Component):
+    def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
+        super().__init__(config)
+        self.axis = transform.Rotation.from_euler('xyz', config['axis'], degrees=True)
+        self.limits = {}
+        if 'limits' in config:
+            self.limits['min'] = config['limits'].get('min', None)
+            self.limits['max'] = config['limits'].get('max', None)
+            self.limits['speed'] = config['limits'].get('speed', None)
+            self.limits['power'] = config['limits'].get('power', None)
 
-    def setPosition(self, position: 'numpy.array'):
-        self.pos = position
+class RotationJoint(Joint):
+    def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
+        super().__init__(config)
+        
 
-    def execute(self):
-        pass
+
+
+
+
 
 class BoundLinearRotationJoint(Component):
     def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
