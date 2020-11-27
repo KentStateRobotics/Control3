@@ -45,16 +45,16 @@ class Component:
         self.config = config
         self.name = config['name']
         self.parent = parent
-        self.defaultRotation = transform.Rotation.from_euler('xyz', config['rotation'], degrees=True)
+        self.defaultRotation = transform.Rotation.from_euler('XYZ', config['rotation'], degrees=True)
         self.defaultPosition = np.array(config['position'])
-        self._rotation = self.defaultRot
-        self._position = self.defaultPos
+        self._rotation = self.defaultRotation
+        self._position = self.defaultPosition
         self.visualModels = []
         self.colisionModels = []
         self.children = []
-        if 'children' in self._config:
-            for child in self._config['children']:
-                self.children.append(ComponentNameMap[config['type']](config))
+        if 'children' in self.config:
+            for child in self.config['children']:
+                self.children.append(ComponentNameMap[config['type']](child, self))
 
     @property
     def isRoot(self) -> bool:
@@ -67,18 +67,18 @@ class Component:
         '''Gets rotation relitive to the root
         '''
         if self.parent is None:
-            return self.rotation
+            return self._rotation
         else:
-            return self.rotation * self.parent.absRotation
+            return self._rotation * self.parent.absRotation
 
     @property
     def absPosition(self) -> 'numpy.array':
         '''Gets position relitive to the root
         '''
         if self.parent is None:
-            return self.pos
+            return self._position
         else:
-            return np.add(self.rot.apply(self.pos), self.parent.absPosition)
+            return np.add(self.parent._rotation.apply(self._position), self.parent.absPosition)
 
     @property
     def rotation(self):
@@ -92,6 +92,17 @@ class Component:
         '''
         return self._position
 
+    def find(self, name: str) -> typing.Union['KSRCore.control.model.Component', None]:
+        '''Searches children and self for component with matching name, if it is not found, returns None
+        '''
+        if self.name == name:
+            return self
+        else:
+            for child in self.children:
+                com = child.find(name)
+                if com:
+                    return com
+        return None
 
 
 class Joint(Component):
@@ -101,8 +112,8 @@ class Joint(Component):
         `distance` is the position of either traversial or rotation, either in degrees or meters 
     '''
     def __init__(self, config: dict, parent: typing.Optional['KSRCore.control.model.Component'] = None):
-        super().__init__(config)
-        self.axis = transform.Rotation.from_euler('xyz', config['axis'], degrees=True)
+        super().__init__(config, parent)
+        self.axis = transform.Rotation.from_euler('XYZ', config['axis'], degrees=True)
         self.limits = {}
         if 'limits' in config:
             self.limits['min'] = config['limits'].get('min', None)

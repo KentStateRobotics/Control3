@@ -14,7 +14,7 @@ class Component:
         self.config = config
         self.name = config['name']
         self.parent = parent
-        self.defaultRotation = transform.Rotation.from_euler('xyz', config['rotation'], degrees=True)
+        self.defaultRotation = transform.Rotation.from_euler('XYZ', config['rotation'], degrees=True)
         self.defaultPosition = np.array(config['position'])
         self.rotation = self.defaultRot
         self.position = self.defaultPos
@@ -46,7 +46,7 @@ class Component:
 class Joint(Component):
     def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
         super().__init__(config)
-        self.axis = transform.Rotation.from_euler('xyz', config['axis'], degrees=True)
+        self.axis = transform.Rotation.from_euler('XYZ', config['axis'], degrees=True)
         self.limits = {}
         if 'limits' in config:
             self.limits['min'] = config['limits'].get('min', None)
@@ -68,8 +68,8 @@ class BoundLinearRotationJoint(Component):
     def __init__(self, config: dict, parent: 'KSRCore.control.model.Componet' = None):
         super().__init__(config)
         if self.limits:
-            self.limits[0] = transform.Rotation.from_euler('xyz', self.limits[0], degrees=True)
-            self.limits[1] = transform.Rotation.from_euler('xyz', self.limits[1], degrees=True)
+            self.limits[0] = transform.Rotation.from_euler('XYZ', self.limits[0], degrees=True)
+            self.limits[1] = transform.Rotation.from_euler('XYZ', self.limits[1], degrees=True)
             self.slerp = transform.Slerp([0, 1], self.limits)
         else:
             raise RuntimeError("LinearRotationJoint requires limits")
